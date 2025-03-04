@@ -19,6 +19,11 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           await import('prismjs/components/prism-jsx');
           await import('prismjs/components/prism-typescript');
           await import('prismjs/components/prism-tsx');
+          await import('prismjs/components/prism-javascript');
+          await import('prismjs/components/prism-css');
+          await import('prismjs/components/prism-json');
+          await import('prismjs/components/prism-bash');
+          await import('prismjs/components/prism-markdown');
           
           // Highlight the code
           if (codeRef.current) {
@@ -34,18 +39,24 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   }, [code, language, theme]);
 
   return (
-    <div className="my-4 rounded-md overflow-hidden border border-slate-700 shadow-md">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-200 border-b border-slate-700 text-xs">
+    <div className="my-4 rounded-md overflow-hidden border shadow-md" style={{ borderColor: 'var(--tab-border)' }}>
+      <div className="flex items-center justify-between px-4 py-2 text-xs border-b" 
+        style={{ 
+          background: 'var(--sidebar-bg)', 
+          color: 'var(--code-fg)',
+          borderColor: 'var(--tab-border)'
+        }}>
         <div className="flex items-center gap-2">
           <span className="flex space-x-1">
             <span className="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
             <span className="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
             <span className="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
           </span>
-          <span className="font-semibold text-xs text-slate-300">{language}</span>
+          <span className="font-semibold text-xs" style={{ color: 'var(--syntax-constant)' }}>{language}</span>
         </div>
         <button
-          className="text-slate-400 hover:text-slate-200 transition-colors"
+          className="transition-colors"
+          style={{ color: 'var(--line-number)' }}
           onClick={() => {
             navigator.clipboard.writeText(code);
             // Show a small popup indicating copied
@@ -74,12 +85,21 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           </svg>
         </button>
       </div>
-      <pre className={`language-${language} text-sm p-4 bg-slate-800 dark:bg-slate-900 overflow-x-auto font-mono leading-relaxed`}>
+      <pre className={`language-${language} text-sm p-4 overflow-x-auto font-mono leading-relaxed`} 
+        style={{ 
+          background: 'var(--editor-bg)',
+          color: 'var(--code-fg)',
+        }}>
         <code ref={codeRef} className={`language-${language}`}>
           {code}
         </code>
       </pre>
-      <div className="px-4 py-1 text-xs text-slate-400 bg-slate-800 border-t border-slate-700 flex justify-between">
+      <div className="px-4 py-1 text-xs border-t flex justify-between" 
+        style={{ 
+          background: 'var(--editor-bg)',
+          color: 'var(--syntax-comment)',
+          borderColor: 'var(--tab-border)'
+        }}>
         <span>// AI Code Buddy</span>
         <span>{new Date().toLocaleDateString()}</span>
       </div>
