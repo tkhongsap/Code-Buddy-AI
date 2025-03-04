@@ -181,25 +181,25 @@ export default function Header() {
         <div className="flex items-center md:hidden gap-2">
           <Button 
             variant="outline" 
-            size="icon" 
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-lg"
+            size="sm" 
+            onClick={() => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system")}
+            className="px-2"
           >
-            {theme === "dark" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+            {theme === "light" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600">
                 <circle cx="12" cy="12" r="5"></circle>
                 <line x1="12" y1="1" x2="12" y2="3"></line>
                 <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            ) : theme === "dark" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
               </svg>
             )}
           </Button>
@@ -239,6 +239,33 @@ export default function Header() {
                       Docs
                     </Button>
                     <div className="border-t pt-4 space-y-3">
+                      <div className="flex gap-2 items-center mb-3">
+                        <span className="text-sm text-muted-foreground">Theme:</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("light")}
+                          className={`px-3 text-xs ${theme === "light" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          Light
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("dark")}
+                          className={`px-3 text-xs ${theme === "dark" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          Dark
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("system")}
+                          className={`px-3 text-xs ${theme === "system" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          System
+                        </Button>
+                      </div>
                       <Button 
                         onClick={() => navigate("/auth")} 
                         variant="outline" 
@@ -277,27 +304,57 @@ export default function Header() {
                     >
                       Learning
                     </Button>
-                    <div className="border-t pt-4 flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-                          <span className="text-sm font-medium">
-                            {user.username.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="text-sm font-medium">{user.username}</div>
+                    <div className="border-t pt-4 space-y-4">
+                      <div className="flex gap-2 items-center mb-3">
+                        <span className="text-sm text-muted-foreground">Theme:</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("light")}
+                          className={`px-3 text-xs ${theme === "light" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          Light
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("dark")}
+                          className={`px-3 text-xs ${theme === "dark" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          Dark
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setTheme("system")}
+                          className={`px-3 text-xs ${theme === "system" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
+                        >
+                          System
+                        </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        onClick={handleLogout} 
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                          <polyline points="16 17 21 12 16 7"></polyline>
-                          <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Sign out
-                      </Button>
+                      
+                      <div className="flex items-center justify-between border-t pt-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
+                            <span className="text-sm font-medium">
+                              {user.username.substring(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="text-sm font-medium">{user.username}</div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          onClick={handleLogout} 
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                          </svg>
+                          Sign out
+                        </Button>
+                      </div>
                     </div>
                   </>
                 )}
