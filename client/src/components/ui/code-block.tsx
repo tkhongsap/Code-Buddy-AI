@@ -12,19 +12,24 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
 
   useEffect(() => {
     if (codeRef.current) {
-      import('prismjs').then(Prism => {
-        // Import language support
-        import('prismjs/components/prism-jsx').then(() => {
-          import('prismjs/components/prism-typescript').then(() => {
-            import('prismjs/components/prism-tsx').then(() => {
-              // Highlight the code
-              if (codeRef.current) {
-                Prism.highlightElement(codeRef.current);
-              }
-            });
-          });
-        });
-      });
+      const loadPrism = async () => {
+        try {
+          // Import Prism and language support
+          const Prism = await import('prismjs');
+          await import('prismjs/components/prism-jsx');
+          await import('prismjs/components/prism-typescript');
+          await import('prismjs/components/prism-tsx');
+          
+          // Highlight the code
+          if (codeRef.current) {
+            Prism.default.highlightElement(codeRef.current);
+          }
+        } catch (error) {
+          console.error('Error loading Prism:', error);
+        }
+      };
+      
+      loadPrism();
     }
   }, [code, language, theme]);
 

@@ -307,7 +307,9 @@ export default function Dashboard() {
                       <span className="font-medium">{skill.skill}</span>
                       <span className="text-sm text-muted-foreground">{skill.progress}%</span>
                     </div>
-                    <Progress value={skill.progress} className="h-2.5" indicatorClassName={`bg-[${skill.color}]`} />
+                    <Progress value={skill.progress} className="h-2.5" style={{
+                      "--progress-foreground": skill.color
+                    } as React.CSSProperties} />
                   </div>
                 ))}
               </div>
