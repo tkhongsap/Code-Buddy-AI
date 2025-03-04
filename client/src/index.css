@@ -4,6 +4,35 @@
 
 /* Modern code editor theme adjustments */
 :root {
+  /* Light theme (default) */
+  --code-bg: #ffffff;
+  --code-fg: #1e1e1e;
+  --syntax-comment: #008000;
+  --syntax-keyword: #0000ff;
+  --syntax-string: #a31515;
+  --syntax-number: #098658;
+  --syntax-function: #795e26;
+  --syntax-operator: #000000;
+  --syntax-class: #267f99;
+  --syntax-variable: #001080;
+  --syntax-type: #267f99;
+  --syntax-constant: #0070c1;
+  
+  /* UI Colors - Light */
+  --editor-bg: #ffffff;
+  --sidebar-bg: #f3f3f3;
+  --panel-bg: #ffffff;
+  --active-tab: #ffffff;
+  --inactive-tab: #ececec;
+  --tab-border: #e1e1e1;
+  --line-number: #237893;
+  --selection-bg: #add6ff;
+  --line-highlight: #f8f8f8;
+  --scrollbar-thumb: #c1c1c1;
+}
+
+/* Dark theme */
+.dark {
   /* VS Code inspired dark theme colors */
   --code-bg: #1e1e1e;
   --code-fg: #d4d4d4;
@@ -18,7 +47,7 @@
   --syntax-type: #4ec9b0;
   --syntax-constant: #4fc1ff;
   
-  /* UI Colors */
+  /* UI Colors - Dark */
   --editor-bg: #1e1e1e;
   --sidebar-bg: #252526;
   --panel-bg: #1e1e1e;

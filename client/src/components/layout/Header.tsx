@@ -12,7 +12,7 @@ import { useTheme } from "@/hooks/use-theme";
 export default function Header() {
   const [, navigate] = useLocation();
   const { user, logoutMutation } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
 
