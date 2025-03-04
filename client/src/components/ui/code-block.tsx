@@ -29,14 +29,29 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   }, [code, language, theme]);
 
   return (
-    <div className="my-4 rounded-md overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-gray-200 dark:bg-gray-900 text-xs">
-        <span>{language}</span>
+    <div className="my-4 rounded-md overflow-hidden border border-slate-700 shadow-md">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-slate-200 border-b border-slate-700 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="flex space-x-1">
+            <span className="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
+            <span className="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
+            <span className="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
+          </span>
+          <span className="font-semibold text-xs text-slate-300">{language}</span>
+        </div>
         <button
-          className="text-gray-400 hover:text-gray-200 transition-colors"
+          className="text-slate-400 hover:text-slate-200 transition-colors"
           onClick={() => {
             navigator.clipboard.writeText(code);
+            // Show a small popup indicating copied
+            const button = document.activeElement as HTMLButtonElement;
+            const originalTitle = button.title;
+            button.title = "Copied!";
+            setTimeout(() => {
+              button.title = originalTitle;
+            }, 1500);
           }}
+          title="Copy to clipboard"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -54,11 +69,15 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           </svg>
         </button>
       </div>
-      <pre className={`language-${language} text-sm p-4 bg-gray-800 dark:bg-gray-900 overflow-x-auto`}>
+      <pre className={`language-${language} text-sm p-4 bg-slate-800 dark:bg-slate-900 overflow-x-auto font-mono leading-relaxed`}>
         <code ref={codeRef} className={`language-${language}`}>
           {code}
         </code>
       </pre>
+      <div className="px-4 py-1 text-xs text-slate-400 bg-slate-800 border-t border-slate-700 flex justify-between">
+        <span>// AI Code Buddy</span>
+        <span>{new Date().toLocaleDateString()}</span>
+      </div>
     </div>
   );
 }

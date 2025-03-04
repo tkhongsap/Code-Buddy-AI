@@ -115,22 +115,25 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow bg-slate-50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow bg-slate-900 py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">Track your progress and coding activity</p>
+              <div className="flex items-center mb-2">
+                <div className="h-6 w-1 bg-primary mr-2"></div>
+                <h1 className="text-2xl sm:text-3xl font-bold font-mono tracking-tight">DEVELOPER CONSOLE</h1>
+              </div>
+              <p className="text-muted-foreground mt-1 pl-3 border-l border-slate-700 text-sm font-mono">// track your progress and coding activity</p>
             </div>
             <div className="mt-4 sm:mt-0">
               <Button 
                 onClick={() => navigate("/chat")} 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 shadow-md"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <span>New AI Chat</span>
+                <span className="font-mono text-sm">$ start_new_chat</span>
               </Button>
             </div>
           </div>

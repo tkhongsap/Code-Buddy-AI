@@ -242,22 +242,25 @@ Would you like me to provide specific code examples or explain any particular as
         {/* Chat area */}
         <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900">
           {/* Header */}
-          <div className="border-b bg-card p-4">
+          <div className="border-b bg-slate-900 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center text-white mr-3">
+                <div className="h-10 w-10 rounded-sm bg-primary flex items-center justify-center text-white mr-3 shadow-lg border border-indigo-400/20">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 8V4H8"></path>
-                    <rect width="16" height="12" x="4" y="8" rx="2"></rect>
-                    <path d="M2 14h2"></path>
-                    <path d="M20 14h2"></path>
-                    <path d="M15 13v2"></path>
-                    <path d="M9 13v2"></path>
+                    <path d="M12 18h.01"></path>
+                    <path d="M8 18h.01"></path>
+                    <path d="M16 18h.01"></path>
+                    <path d="M3 10h18"></path>
+                    <path d="M3 6h18"></path>
+                    <rect width="18" height="16" x="3" y="4" rx="2"></rect>
                   </svg>
                 </div>
                 <div>
-                  <h2 className="font-semibold">AI Code Buddy</h2>
-                  <p className="text-xs text-green-600 dark:text-green-400">Online • Ready to assist</p>
+                  <h2 className="font-mono font-semibold tracking-tight">AI Code Buddy <span className="text-xs font-normal text-slate-500">v1.0.0</span></h2>
+                  <div className="flex items-center">
+                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                    <p className="text-xs text-green-400 font-mono">Online • Ready to assist</p>
+                  </div>
                 </div>
               </div>
               <div className="flex space-x-2">
