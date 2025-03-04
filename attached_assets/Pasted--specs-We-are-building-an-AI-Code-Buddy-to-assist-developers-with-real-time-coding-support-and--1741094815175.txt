@@ -1,0 +1,69 @@
+<specs>
+We are building an **AI Code Buddy** to assist developers with real-time coding support and to track their learning progress. The core requirements for this phase are:
+
+1. **Landing Page**:
+   - Provide a welcoming introduction to the AI Code Buddy.
+   - Clearly explain the key features (real-time coding support, learning progress tracking, etc.).
+   - Include clear calls-to-action (e.g., "Get Started" or "Sign In") that guide users into the application.
+   - Ensure the landing page is visually appealing and optimized for both desktop and mobile experiences.
+
+2. **Dashboard**:
+   - Present an activity overview with key metrics (total queries, saved content, learning progress).
+   - Display recent queries with timestamps.
+   - Integrate a **learning progress tracker** to monitor active courses and highlight skill improvements over time.
+   - Use a card-based layout for clear, organized presentation, optimized for both desktop and mobile.
+   - Support dark mode for enhanced readability in various environments.
+
+3. **AI-Powered Query System**:
+   - Provide a real-time, AI-driven chat interface for coding assistance.
+   - Enable developers to ask coding questions and receive detailed, contextual AI-generated solutions.
+   - Allow users to save important responses for future reference.
+   - Ensure low-latency interactions by optimizing and caching frequent queries.
+
+We require a **user-friendly, mobile-responsive** design with intuitive interactions and seamless performance.
+</specs>
+
+<your_task>
+1. **Implement the Landing Page:**
+   - Create a visually engaging landing page that introduces the AI Code Buddy.
+   - Clearly highlight key features and benefits.
+   - Include prominent call-to-action buttons (e.g., “Get Started,” “Sign In”).
+   - Ensure the design is responsive and optimized for mobile devices.
+
+2. **Implement the Dashboard:**
+   - Design a visually appealing UI that offers quick insights into the user's coding journey.
+   - Include distinct sections for:
+     - Recent queries (displayed with timestamps)
+     - Skill progression tracking and learning progress
+     - Quick statistics and engagement metrics
+   - Use a card-based layout that adapts elegantly to both desktop and mobile devices.
+   - Integrate dark mode support to enhance usability in different lighting conditions.
+
+3. **Develop the AI-Powered Query System:**
+   - Build an AI-driven chat interface that enables real-time coding assistance.
+   - Allow users to ask questions and receive comprehensive code suggestions or explanations.
+   - Provide functionality to save valuable responses for later access.
+   - Optimize performance with caching for frequently asked questions to reduce latency.
+
+4. **Ensure Full Responsiveness:**
+   - Utilize flexbox or CSS grid layouts to guarantee adaptability across various screen sizes.
+   - Implement collapsible sections where needed to reduce clutter on smaller screens.
+   - Prioritize a mobile-first design approach.
+
+5. **Enhance Accessibility & User Experience:**
+   - Adhere to ARIA standards and semantic HTML to support screen readers.
+   - Ensure smooth keyboard navigation throughout the interface.
+   - Use subtle animations and transitions to enhance, not distract from, the user experience.
+
+6. **Optimize Performance:**
+   - Reduce API call overhead by caching frequent queries and responses.
+   - Employ lazy loading for non-critical components to speed up the initial load.
+</your_task>
+
+<rules>
+- Use **React (TypeScript preferred)** for the frontend implementation.
+- Maintain a consistent, modern, and intuitive UI design.
+- Store user queries and AI responses in **PostgreSQL** for efficient retrieval.
+- Use **JWT-based authentication** to manage user sessions securely.
+- Follow best practices for API performance and AI integration.
+</rules>
