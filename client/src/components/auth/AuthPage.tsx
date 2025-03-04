@@ -80,21 +80,25 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow flex flex-col md:flex-row items-stretch bg-slate-900">
+      <main className="flex-grow flex flex-col md:flex-row items-stretch" style={{ background: 'var(--editor-bg)' }}>
         {/* Auth form column */}
         <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12">
           <div className="w-full max-w-md">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold font-mono mb-2 text-slate-200">AI Code Buddy</h1>
-              <p className="text-slate-400 text-sm">// Developer-centric coding assistance</p>
+              <h1 className="text-3xl font-bold font-mono mb-2" style={{ color: 'var(--code-fg)' }}>AI Code Buddy</h1>
+              <p className="text-sm font-mono" style={{ color: 'var(--syntax-comment)' }}>// Developer-centric coding assistance</p>
             </div>
             
-            <Card className="shadow-xl border-slate-700 bg-slate-800 text-slate-200">
+            <Card className="shadow-xl border-gray-800" style={{ background: 'var(--panel-bg)', color: 'var(--code-fg)' }}>
               <CardContent className="pt-6">
                 <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-700">
-                    <TabsTrigger value="login" className="data-[state=active]:bg-slate-600">Sign In</TabsTrigger>
-                    <TabsTrigger value="register" className="data-[state=active]:bg-slate-600">Register</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 mb-6" style={{ background: 'var(--sidebar-bg)' }}>
+                    <TabsTrigger value="login" style={{ 
+                      backgroundColor: activeTab === 'login' ? 'var(--active-tab)' : 'var(--inactive-tab)'
+                     }}>Sign In</TabsTrigger>
+                    <TabsTrigger value="register" style={{ 
+                      backgroundColor: activeTab === 'register' ? 'var(--active-tab)' : 'var(--inactive-tab)'
+                     }}>Register</TabsTrigger>
                   </TabsList>
                 
                   <TabsContent value="login">
@@ -257,14 +261,15 @@ export default function AuthPage() {
         </div>
         
         {/* Hero/Info column */}
-        <div className="hidden md:flex md:w-1/2 bg-slate-800 items-center justify-center border-l border-slate-700">
+        <div className="hidden md:flex md:w-1/2 items-center justify-center border-l border-gray-800" style={{ background: 'var(--sidebar-bg)' }}>
           <div className="p-12 max-w-lg">
             <div className="mb-8">
-              <div className="inline-block bg-slate-700 px-3 py-1 text-xs text-slate-300 font-mono rounded mb-3">
+              <div className="inline-block px-3 py-1 text-xs font-mono rounded mb-3" 
+                style={{ background: 'var(--selection-bg)', color: 'var(--syntax-variable)' }}>
                 v1.0.0-beta • Developer Edition
               </div>
-              <h2 className="text-3xl font-bold text-slate-200 mb-4">Enhance Your Coding Experience</h2>
-              <p className="text-slate-400 mb-6">
+              <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--code-fg)' }}>Enhance Your Coding Experience</h2>
+              <p className="mb-6" style={{ color: 'var(--syntax-comment)' }}>
                 AI Code Buddy provides real-time assistance for developers to tackle complex coding challenges, debug issues, and learn new technologies.
               </p>
               
@@ -277,41 +282,46 @@ export default function AuthPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-200">Intelligent Code Assistance</h3>
-                    <p className="text-sm text-slate-400">Get contextual coding help with syntax highlighting</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--syntax-class)' }}>Intelligent Code Assistance</h3>
+                    <p className="text-sm" style={{ color: 'var(--syntax-comment)' }}>Get contextual coding help with syntax highlighting</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 h-5 w-5 text-primary flex-shrink-0">
+                  <div className="mt-1 h-5 w-5 flex-shrink-0" style={{ color: 'var(--syntax-keyword)' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="9 11 12 14 22 4"></polyline>
                       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-200">Learning Progress Tracking</h3>
-                    <p className="text-sm text-slate-400">Track your skill development and learning progress</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--syntax-class)' }}>Learning Progress Tracking</h3>
+                    <p className="text-sm" style={{ color: 'var(--syntax-comment)' }}>Track your skill development and learning progress</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 h-5 w-5 text-primary flex-shrink-0">
+                  <div className="mt-1 h-5 w-5 flex-shrink-0" style={{ color: 'var(--syntax-keyword)' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="9 11 12 14 22 4"></polyline>
                       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-200">Interactive Chat Interface</h3>
-                    <p className="text-sm text-slate-400">Natural language programming assistance and debugging</p>
+                    <h3 className="font-semibold" style={{ color: 'var(--syntax-class)' }}>Interactive Chat Interface</h3>
+                    <p className="text-sm" style={{ color: 'var(--syntax-comment)' }}>Natural language programming assistance and debugging</p>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="border border-slate-700 rounded-md overflow-hidden">
-              <div className="bg-slate-900 px-4 py-2 text-xs font-mono text-slate-400 flex items-center justify-between border-b border-slate-700">
+            <div className="border rounded-md overflow-hidden" style={{ borderColor: 'var(--tab-border)' }}>
+              <div className="px-4 py-2 text-xs font-mono flex items-center justify-between border-b" 
+                style={{ 
+                  background: 'var(--sidebar-bg)', 
+                  color: 'var(--line-number)',
+                  borderColor: 'var(--tab-border)'
+                }}>
                 <span>Example.tsx</span>
                 <span>TypeScript</span>
               </div>
