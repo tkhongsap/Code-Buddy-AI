@@ -10,33 +10,43 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Check for user's stored preference
-    const storedTheme = localStorage.getItem("theme");
-    
-    if (storedTheme === "light" || storedTheme === "dark") {
-      return storedTheme;
+  // Initialize with a simple default value first
+  const [theme, setTheme] = useState<Theme>("dark");
+  
+  // Then use useEffect to handle browser-specific API calls
+  useEffect(() => {
+    try {
+      // Check for user's stored preference
+      const storedTheme = localStorage.getItem("theme");
+      
+      if (storedTheme === "light" || storedTheme === "dark") {
+        setTheme(storedTheme as Theme);
+        return;
+      }
+      
+      // Check for system preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme("dark");
+      }
+    } catch (error) {
+      console.error("Error accessing localStorage or matchMedia:", error);
     }
-    
-    // Check for system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return "dark";
-    }
-    
-    // Default to dark as per theme.json
-    return "dark";
-  });
+  }, []);
 
   useEffect(() => {
-    // Update class on document
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    try {
+      // Update class on document
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      
+      // Store preference
+      localStorage.setItem("theme", theme);
+    } catch (error) {
+      console.error("Error updating theme:", error);
     }
-    
-    // Store preference
-    localStorage.setItem("theme", theme);
   }, [theme]);
 
   return (

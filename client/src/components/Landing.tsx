@@ -9,11 +9,12 @@ export default function Landing() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
+  // Instead of redirecting in a useEffect, we can conditionally render
+  // This way we avoid the error-prone redirection that may cause issues
+  if (user) {
+    navigate("/dashboard");
+    return null; // Return null while navigating
+  }
 
   const scrollToFeatures = () => {
     document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
