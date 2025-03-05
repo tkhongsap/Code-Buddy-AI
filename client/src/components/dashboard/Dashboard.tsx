@@ -39,6 +39,18 @@ export default function Dashboard() {
     // Only create chart if it doesn't exist yet
     if (!chartInstanceRef.current) {
       import('chart.js').then((Chart) => {
+        // Register required components
+        Chart.Chart.register(
+          Chart.LineController, 
+          Chart.LineElement, 
+          Chart.PointElement, 
+          Chart.CategoryScale, 
+          Chart.LinearScale,
+          Chart.Tooltip,
+          Chart.Legend,
+          Chart.Filler
+        );
+        
         const ctx = chartRef.current?.getContext('2d');
         if (!ctx) return;
 
@@ -56,8 +68,8 @@ export default function Dashboard() {
             datasets: [{
               label: 'AI Queries',
               data: dashboardData.weeklyActivity.data,
-              borderColor: '#3B82F6',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderColor: '#0e7a39',
+              backgroundColor: 'rgba(14, 122, 57, 0.1)',
               tension: 0.4,
               fill: true
             }]

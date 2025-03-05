@@ -62,9 +62,8 @@ export default function Header() {
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m18 16 4-4-4-4"></path>
-              <path d="m6 8-4 4 4 4"></path>
-              <path d="m14.5 4-5 16"></path>
+              <path d="M21 7v6h-6"></path>
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
             </svg>
           </div>
           <span className="text-xl font-bold hidden sm:inline-block">AI Code Buddy</span>
