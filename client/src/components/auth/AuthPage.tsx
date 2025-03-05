@@ -141,6 +141,19 @@ export default function AuthPage() {
                         >
                           {loginMutation.isPending ? "Signing in..." : "Sign In"}
                         </Button>
+                        
+                        <Button 
+                          type="button"
+                          variant="outline" 
+                          className="w-full mt-2" 
+                          onClick={() => {
+                            // Use our demo user credentials
+                            loginMutation.mutate({ username: "demo", password: "demo" });
+                          }}
+                          disabled={loginMutation.isPending}
+                        >
+                          Demo Login
+                        </Button>
                       </div>
                     </form>
                     

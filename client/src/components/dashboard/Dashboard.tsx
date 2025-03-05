@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
@@ -137,7 +137,7 @@ export default function Dashboard() {
               </div>
               <p className="text-muted-foreground mt-1 pl-3 border-l dark:border-slate-700 border-slate-300 text-sm font-mono">// track your progress and coding activity</p>
             </div>
-            <div className="mt-4 sm:mt-0">
+            <div className="mt-4 sm:mt-0 flex gap-2">
               <Button 
                 onClick={() => navigate("/chat")} 
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-md"
@@ -146,6 +146,22 @@ export default function Dashboard() {
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
                 <span className="font-mono text-sm">$ start_new_chat</span>
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  logoutMutation.mutate();
+                  navigate("/");
+                }}
+                variant="outline"
+                className="flex items-center gap-2 border-red-400 hover:bg-red-50 text-red-600 dark:hover:bg-red-950/50"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span className="font-mono text-sm">Logout</span>
               </Button>
             </div>
           </div>

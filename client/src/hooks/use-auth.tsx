@@ -23,7 +23,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  // Auto login for testing purposes - creates a mock user
+  // Mock user for testing purposes
   const mockDemoUser: SelectUser = {
     id: 1,
     username: "demo",
@@ -31,10 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     createdAt: new Date()
   };
   
-  // Force set the mock user instead of fetching from API
+  // Uncomment to auto-login for testing purposes
+  /*
   useEffect(() => {
     queryClient.setQueryData(["/api/user"], mockDemoUser);
   }, []);
+  */
   
   const {
     data: user,
