@@ -13,22 +13,46 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";
 
-// The Routes component is now defined inside the App component
-// This ensures all context providers are available to routes
+/*
+ * Provider order is important:
+ * 1. ThemeProvider - Theme context
+ * 2. QueryClientProvider - React Query for API requests
+ * 3. Router components (Switch/Route) - Navigation structure
+ * 4. AuthProvider - Auth context within the Router
+ */
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {/* Routes defined inside providers to ensure contexts are available */}
           <Switch>
-            <Route path="/" component={Landing} />
-            <Route path="/auth" component={AuthPage} />
-            <Route path="/simple-chat" component={SimpleChat} />
-            <ProtectedRoute path="/dashboard" component={Dashboard} />
-            <ProtectedRoute path="/chat" component={ChatInterface} />
-            <ProtectedRoute path="/learning" component={LearningProgress} />
-            <Route component={NotFound} />
+            <Route path="/">
+              <Landing />
+            </Route>
+            
+            <Route path="/auth">
+              <AuthPage />
+            </Route>
+            
+            <Route path="/simple-chat">
+              <SimpleChat />
+            </Route>
+            
+            <Route path="/dashboard">
+              <ProtectedRoute path="/dashboard" component={Dashboard} />
+            </Route>
+            
+            <Route path="/chat">
+              <ProtectedRoute path="/chat" component={ChatInterface} />
+            </Route>
+            
+            <Route path="/learning">
+              <ProtectedRoute path="/learning" component={LearningProgress} />
+            </Route>
+            
+            <Route>
+              <NotFound />
+            </Route>
           </Switch>
           <Toaster />
         </AuthProvider>

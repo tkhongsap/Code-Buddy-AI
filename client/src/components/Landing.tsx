@@ -1,25 +1,10 @@
-import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function Landing() {
   const [, navigate] = useLocation();
-  const { user } = useAuth();
-
-  // Use useEffect for navigation to avoid React rendering issues
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
-  
-  // Return early if user is authenticated
-  if (user) {
-    return null; // Return null while navigation is pending
-  }
 
   const scrollToFeatures = () => {
     document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
