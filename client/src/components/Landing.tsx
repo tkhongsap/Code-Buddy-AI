@@ -299,13 +299,13 @@ export default function Landing() {
                 <div className="flex items-center">
                   <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mr-4">
                     <img 
-                      src="https://randomuser.me/api/portraits/women/68.jpg" 
-                      alt="Jennifer L." 
+                      src="https://randomuser.me/api/portraits/women/93.jpg" 
+                      alt="Soo-Jin P." 
                       className="h-full w-full object-cover"
                     />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Jennifer L.</h4>
+                    <h4 className="font-semibold">Soo-Jin P.</h4>
                     <p className="text-sm text-muted-foreground">Tech Lead</p>
                   </div>
                 </div>
