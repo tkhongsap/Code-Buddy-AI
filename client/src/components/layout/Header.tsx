@@ -20,8 +20,21 @@ import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 
 export default function Header() {
   const navigate = useSafeNavigation();
-  const { user, logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
+  
+  // Safely access auth context - it might not be available on all pages
+  let user = null;
+  let logoutMutation = { mutateAsync: async () => {} };
+  
+  try {
+    // Attempt to use auth context if available
+    const authContext = useAuth();
+    user = authContext.user;
+    logoutMutation = authContext.logoutMutation;
+  } catch (e) {
+    // Auth context not available - this is fine on public pages
+    console.log("Auth context not available on this page");
+  }
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
 
