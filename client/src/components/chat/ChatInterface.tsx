@@ -55,21 +55,43 @@ export default function ChatInterface() {
 
   // Configure Marked options
   useEffect(() => {
-    // Create a custom renderer to handle code blocks
-    const renderer = new marked.Renderer();
-    
-    // Override the code block rendering
-    renderer.code = (code, language) => {
-      const lang = language || 'javascript';
-      return `<div class="code-block" data-language="${lang}">${code}</div>`;
-    };
-    
-    // Set marked options
-    marked.setOptions({
-      renderer: renderer,
-      breaks: true,
-      gfm: true,
-    });
+    try {
+      // Create a custom renderer to handle code blocks
+      const renderer = new marked.Renderer();
+      
+      // Override the code block rendering to use our code-block format
+      // Using the correct type signature from marked
+      renderer.code = function(text, lang, escaped) {
+        const language = lang || 'javascript';
+        return `<div class="code-block" data-language="${language}">${text}</div>`;
+      };
+      
+      // Override other renderer methods for better styling
+      renderer.paragraph = function(text) {
+        return `<p class="mb-4">${text}</p>`;
+      };
+      
+      renderer.list = function(body, ordered) {
+        const type = ordered ? 'ol' : 'ul';
+        return `<${type} class="mb-4 pl-6">${body}</${type}>`;
+      };
+      
+      renderer.listitem = function(text) {
+        return `<li class="mb-1">${text}</li>`;
+      };
+      
+      // Set marked options with our custom renderer
+      marked.setOptions({
+        renderer: renderer,
+        breaks: true,       // Convert \n to <br>
+        gfm: true,          // GitHub Flavored Markdown
+        headerIds: true,    // Add ids to headers for linking
+        pedantic: false,    // Don't be too strict with the original markdown spec
+        mangle: false,      // Don't mangle email addresses
+      });
+    } catch (error) {
+      console.error('Error configuring marked options:', error);
+    }
   }, []);
 
   // Format AI response text using marked
@@ -79,12 +101,16 @@ export default function ChatInterface() {
       const htmlContent = marked.parse(text);
       
       // Sanitize HTML to prevent XSS
-      const sanitizedHtml = DOMPurify.sanitize(htmlContent);
+      // DOMPurify doesn't have .default in its type definitions but it might in the runtime
+      // So we need to check both ways
+      const purify = (DOMPurify as any).default || DOMPurify;
+      const sanitizedHtml = purify.sanitize(htmlContent);
       
       return sanitizedHtml;
     } catch (error) {
       console.error('Error formatting markdown:', error);
-      return `<p>${text}</p>`;
+      // Return a safe fallback
+      return `<p>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
     }
   };
 
