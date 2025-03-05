@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { mockSavedResponses } from "@/lib/mock-data";
 import { marked } from 'marked';
 import * as DOMPurify from 'isomorphic-dompurify';
+import 'prismjs/themes/prism-okaidia.css'; // Dark theme with vibrant colors
 
 interface Message {
   id: number;
@@ -72,6 +73,9 @@ export default function ChatInterface() {
       // Using a simpler implementation that doesn't rely on custom renderer
       // which avoids TypeScript errors with the marked library typings
       let htmlContent = marked.parse(text);
+      
+      // Apply additional processing for code blocks
+      // We'll rely on the processCodeBlocks function to add syntax highlighting
       
       // Safety: sanitize HTML to prevent XSS attacks
       let sanitizedHtml: string;
@@ -248,6 +252,47 @@ export default function ChatInterface() {
           pre.appendChild(codeEl);
           element.appendChild(pre);
           
+          // Add copy button container
+          const buttonContainer = document.createElement('div');
+          buttonContainer.className = 'copy-button-container';
+          buttonContainer.setAttribute('style', 'position: absolute; top: 0.5rem; right: 0.5rem;');
+          
+          // Create copy button
+          const copyButton = document.createElement('button');
+          copyButton.className = 'copy-button transition-colors hover:text-white flex items-center gap-1 bg-slate-700 px-2 py-1 rounded-md';
+          copyButton.setAttribute('style', 'color: var(--line-number, #858585);');
+          copyButton.title = 'Copy to clipboard';
+          copyButton.innerHTML = `
+            <span class="text-xs">Copy</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          `;
+          
+          // Add copy functionality
+          copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(code);
+            const originalInnerHTML = copyButton.innerHTML;
+            copyButton.innerHTML = `
+              <span class="text-xs">Copied!</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            `;
+            copyButton.setAttribute('style', 'color: var(--green-500, #4ade80);');
+            setTimeout(() => {
+              copyButton.innerHTML = originalInnerHTML;
+              copyButton.setAttribute('style', 'color: var(--line-number, #858585);');
+            }, 1500);
+          });
+          
+          buttonContainer.appendChild(copyButton);
+          element.setAttribute('style', 'position: relative;');
+          element.appendChild(buttonContainer);
+          
           // Highlight the code
           try {
             Prism.highlightElement(codeEl);
@@ -258,7 +303,7 @@ export default function ChatInterface() {
           // Handle standard <code> elements inside <pre> tags that marked.js generates
           try {
             // Try to determine language from class (e.g., "language-python")
-            let language = 'javascript';
+            let language = 'text'; // Default to 'text' instead of javascript for better UX
             element.classList.forEach(className => {
               if (className.startsWith('language-')) {
                 language = className.replace('language-', '');
