@@ -12,57 +12,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoints for the AI Code Buddy application
 
   // Dashboard data endpoint
-  app.get("/api/dashboard", (req, res) => {
+  app.get("/api/dashboard", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    // In a real application, this would fetch personalized dashboard data
-    // For now, we'll return mock data
-    const mockData = {
-      stats: {
-        totalQueries: 156,
-        savedSolutions: 47,
-        activeCourses: 3,
-        skillProgress: 72,
-      },
-      weeklyActivity: {
-        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        data: [5, 8, 12, 7, 15, 9, 3],
-      },
-      recentQueries: [
-        {
-          id: 1,
-          query: "How to implement a React useEffect hook with cleanup",
-          timestamp: "2h ago",
-          tags: ["React", "Hooks"],
+    try {
+      const userId = (req.user as any).id;
+      
+      // Get actual count of chat messages from the database
+      const { db } = storage as any;
+      const messagesCountResult = await db.query(
+        'SELECT COUNT(*) as total FROM chat_messages WHERE user_id = $1',
+        [userId]
+      );
+      const totalQueries = parseInt(messagesCountResult.rows[0].total);
+      
+      // For now, we'll keep using mock data for other stats
+      const dashboardData = {
+        stats: {
+          totalQueries: totalQueries, // Real data from database
+          savedSolutions: 47,  // Still mock data
         },
-        {
-          id: 2,
-          query: "Best practices for TypeScript interfaces vs types",
-          timestamp: "5h ago",
-          tags: ["TypeScript"],
+        weeklyActivity: {
+          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          data: [5, 8, 12, 7, 15, 9, 3],
         },
-        {
-          id: 3,
-          query: "Optimizing PostgreSQL query performance",
-          timestamp: "1d ago",
-          tags: ["SQL", "Database"],
-        },
-        {
-          id: 4,
-          query: "CSS Grid vs Flexbox for responsive layouts",
-          timestamp: "2d ago",
-          tags: ["CSS", "Layout"],
-        },
-      ],
-      learningProgress: [
-        { id: 1, skill: "React", progress: 85, color: "#61DAFB" },
-        { id: 2, skill: "TypeScript", progress: 72, color: "#3178C6" },
-        { id: 3, skill: "Node.js", progress: 64, color: "#339933" },
-        { id: 4, skill: "PostgreSQL", progress: 58, color: "#336791" },
-      ],
-    };
+        recentQueries: [
+          {
+            id: 1,
+            query: "How to implement a React useEffect hook with cleanup",
+            timestamp: "2h ago",
+            tags: ["React", "Hooks"],
+          },
+          {
+            id: 2,
+            query: "Best practices for TypeScript interfaces vs types",
+            timestamp: "5h ago",
+            tags: ["TypeScript"],
+          },
+          {
+            id: 3,
+            query: "Optimizing PostgreSQL query performance",
+            timestamp: "1d ago",
+            tags: ["SQL", "Database"],
+          },
+          {
+            id: 4,
+            query: "CSS Grid vs Flexbox for responsive layouts",
+            timestamp: "2d ago",
+            tags: ["CSS", "Layout"],
+          },
+        ],
+        learningProgress: [
+          { id: 1, skill: "React", progress: 85, color: "#61DAFB" },
+          { id: 2, skill: "TypeScript", progress: 72, color: "#3178C6" },
+          { id: 3, skill: "Node.js", progress: 64, color: "#339933" },
+          { id: 4, skill: "PostgreSQL", progress: 58, color: "#336791" },
+        ],
+      };
 
-    res.json(mockData);
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
   });
 
   // Learning progress endpoint

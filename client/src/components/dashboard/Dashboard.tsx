@@ -24,13 +24,10 @@ export default function Dashboard() {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
-  // Fetch dashboard data (using mock for now)
+  // Fetch dashboard data from the API
   const { data: dashboardData, isLoading } = useQuery<typeof mockDashboardData>({
     queryKey: ["/api/dashboard"],
-    queryFn: async () => {
-      // In a real implementation, this would fetch from the API
-      return mockDashboardData;
-    },
+    // No need to provide queryFn, the default fetcher will use the queryKey as URL
   });
 
   useEffect(() => {
@@ -167,7 +164,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             {/* Total Queries */}
             <Card>
               <CardContent className="pt-6">
@@ -213,55 +210,6 @@ export default function Dashboard() {
                     <polyline points="16 7 22 7 22 13"></polyline>
                   </svg>
                   <span>8% from last week</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Active Courses */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-sm">Active Courses</p>
-                    <h3 className="text-2xl font-bold">{dashboardData?.stats.activeCourses}</h3>
-                  </div>
-                </div>
-                <div className="mt-4 text-sm text-green-600 dark:text-green-400 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  <span>1 new this month</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Skill Progress */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-sm">Avg. Skill Progress</p>
-                    <h3 className="text-2xl font-bold">{dashboardData?.stats.skillProgress}%</h3>
-                  </div>
-                </div>
-                <div className="mt-4 text-sm text-green-600 dark:text-green-400 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-                    <polyline points="16 7 22 7 22 13"></polyline>
-                  </svg>
-                  <span>5% from last month</span>
                 </div>
               </CardContent>
             </Card>
@@ -319,30 +267,7 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Learning Progress */}
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Learning Progress</h2>
-                <Button variant="link" size="sm" className="text-primary" onClick={() => navigate("/learning")}>
-                  View Detailed Report
-                </Button>
-              </div>
-              <div className="space-y-6">
-                {dashboardData?.learningProgress.map((skill, index) => (
-                  <div key={index}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{skill.skill}</span>
-                      <span className="text-sm text-muted-foreground">{skill.progress}%</span>
-                    </div>
-                    <Progress value={skill.progress} className="h-2.5" style={{
-                      "--progress-foreground": skill.color
-                    } as React.CSSProperties} />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Recommended Learning */}
           <Card>
