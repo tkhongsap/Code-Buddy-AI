@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import * as fs from 'fs';
 import * as path from 'path';
+import * as http from 'http';
 
 // Load environment variables in development mode
 if (process.env.NODE_ENV !== 'production') {
@@ -89,7 +90,7 @@ app.use((req, res, next) => {
   // Try to serve the app on port 5000 first, then fall back to other ports if needed
   const tryPort = (port: number): Promise<number> => {
     return new Promise((resolve, reject) => {
-      const tempServer = require('http').createServer();
+      const tempServer = http.createServer();
       tempServer.listen(port, '0.0.0.0');
       
       tempServer.on('listening', () => {
