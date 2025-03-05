@@ -1,8 +1,9 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { getChatCompletion, getChatCompletionStream, type ChatMessage } from "./openai";
+import { insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -139,13 +140,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Temporarily disable authentication check for testing
     // if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { message, conversationHistory = [], stream = false } = req.body;
+    const { message, conversationHistory = [], stream = false, sessionId = null } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
     try {
+      // Get user ID (if authenticated)
+      const userId = req.isAuthenticated() ? (req.user as any).id : 1; // Default to demo user if not authenticated
+      
+      // Determine or create a chat session
+      let chatSessionId = sessionId;
+      let isNewSession = false;
+      
+      if (!chatSessionId) {
+        // Create a new chat session with the first message as title
+        const firstMessagePreview = message.length > 30 
+          ? message.substring(0, 30) + "..." 
+          : message;
+          
+        const newSession = await storage.createChatSession({
+          userId,
+          title: firstMessagePreview,
+          metadata: {
+            createdAt: new Date().toISOString(),
+            source: "web"
+          }
+        });
+        
+        chatSessionId = newSession.id;
+        isNewSession = true;
+      }
+      
+      // Save the user message to the chat session
+      const userChatMessage = await storage.createChatMessage({
+        sessionId: chatSessionId,
+        userId,
+        sender: "user",
+        content: message,
+        contentHtml: null,
+        metadata: {
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       // Convert the conversation history to the format expected by OpenAI
       const messages: ChatMessage[] = [
         // System message to set the AI's behavior
@@ -168,18 +207,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If stream is true, use streaming response, otherwise use regular response
       if (stream) {
-        // Handle streaming response
-        await getChatCompletionStream(messages, res);
+        // Handle streaming response (we'll save AI response after streaming completes)
+        const streamingData = { sessionId: chatSessionId, userId, isNewSession };
+        await getChatCompletionStream(messages, res, streamingData);
         // The response is handled directly in the getChatCompletionStream function
-        // No need to send another response here
       } else {
         // Regular non-streaming response
         const response = await getChatCompletion(messages);
         
-        // Save the chat message to history in a real app
+        // Save the AI response to the chat session
+        const aiChatMessage = await storage.createChatMessage({
+          sessionId: chatSessionId,
+          userId,
+          sender: "ai",
+          content: response,
+          contentHtml: null, // Can add HTML formatting if needed
+          metadata: {
+            timestamp: new Date().toISOString(),
+            model: "gpt-3.5-turbo" // Replace with actual model used
+          }
+        });
+        
         res.json({
           response,
           timestamp: new Date().toLocaleTimeString(),
+          sessionId: chatSessionId,
+          isNewSession
         });
       }
     } catch (error) {
@@ -198,13 +251,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Temporarily disable authentication check for testing
     // if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { message, conversationHistory = [] } = req.body;
+    const { message, conversationHistory = [], sessionId = null } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
 
     try {
+      // Get user ID (if authenticated)
+      const userId = req.isAuthenticated() ? (req.user as any).id : 1; // Default to demo user if not authenticated
+      
+      // Determine or create a chat session
+      let chatSessionId = sessionId;
+      let isNewSession = false;
+      
+      if (!chatSessionId) {
+        // Create a new chat session with the first message as title
+        const firstMessagePreview = message.length > 30 
+          ? message.substring(0, 30) + "..." 
+          : message;
+          
+        const newSession = await storage.createChatSession({
+          userId,
+          title: firstMessagePreview,
+          metadata: {
+            createdAt: new Date().toISOString(),
+            source: "web"
+          }
+        });
+        
+        chatSessionId = newSession.id;
+        isNewSession = true;
+      }
+      
+      // Save the user message to the chat session
+      const userChatMessage = await storage.createChatMessage({
+        sessionId: chatSessionId,
+        userId,
+        sender: "user",
+        content: message,
+        contentHtml: null,
+        metadata: {
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       // Convert the conversation history to the format expected by OpenAI
       const messages: ChatMessage[] = [
         // System message to set the AI's behavior
@@ -225,8 +316,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       ];
 
-      // Process as a streaming response
-      await getChatCompletionStream(messages, res);
+      // Process as a streaming response with context for database storage
+      const streamingContext = { 
+        sessionId: chatSessionId, 
+        userId, 
+        isNewSession 
+      };
+      
+      await getChatCompletionStream(messages, res, streamingContext);
       
     } catch (error) {
       console.error("Error in streaming chat endpoint:", error);
@@ -322,6 +419,158 @@ Key differences:
     ];
 
     res.json(mockSavedResponses);
+  });
+  
+  // Chat History API endpoints
+  
+  // Get user's chat sessions
+  app.get("/api/chat-sessions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = (req.user as any).id;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      const sessions = await storage.getChatSessionsWithPreview(userId, limit);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching chat sessions:", error);
+      res.status(500).json({ error: "Failed to fetch chat sessions" });
+    }
+  });
+  
+  // Get a specific chat session with all messages
+  app.get("/api/chat-sessions/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const sessionId = parseInt(req.params.id);
+      const userId = (req.user as any).id;
+      
+      const session = await storage.getChatSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Chat session not found" });
+      }
+      
+      // Check if the session belongs to the current user
+      if (session.userId !== userId) {
+        return res.status(403).json({ error: "You don't have access to this chat session" });
+      }
+      
+      const messages = await storage.getChatMessages(sessionId);
+      
+      res.json({
+        ...session,
+        messages
+      });
+    } catch (error) {
+      console.error("Error fetching chat session:", error);
+      res.status(500).json({ error: "Failed to fetch chat session" });
+    }
+  });
+  
+  // Create a new chat session
+  app.post("/api/chat-sessions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = (req.user as any).id;
+      const { title, metadata } = req.body;
+      
+      const parsedData = insertChatSessionSchema.safeParse({
+        userId,
+        title: title || "New Chat",
+        metadata: metadata || {}
+      });
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ error: "Invalid chat session data" });
+      }
+      
+      const session = await storage.createChatSession(parsedData.data);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating chat session:", error);
+      res.status(500).json({ error: "Failed to create chat session" });
+    }
+  });
+  
+  // Update a chat session title
+  app.patch("/api/chat-sessions/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const sessionId = parseInt(req.params.id);
+      const userId = (req.user as any).id;
+      const { title } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      
+      const session = await storage.getChatSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Chat session not found" });
+      }
+      
+      // Check if the session belongs to the current user
+      if (session.userId !== userId) {
+        return res.status(403).json({ error: "You don't have access to this chat session" });
+      }
+      
+      const updatedSession = await storage.updateChatSessionTitle(sessionId, title);
+      res.json(updatedSession);
+    } catch (error) {
+      console.error("Error updating chat session:", error);
+      res.status(500).json({ error: "Failed to update chat session" });
+    }
+  });
+  
+  // Add a message to a chat session
+  app.post("/api/chat-sessions/:id/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const sessionId = parseInt(req.params.id);
+      const userId = (req.user as any).id;
+      const { content, sender, contentHtml, metadata } = req.body;
+      
+      if (!content || !sender) {
+        return res.status(400).json({ error: "Content and sender are required" });
+      }
+      
+      const session = await storage.getChatSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Chat session not found" });
+      }
+      
+      // Check if the session belongs to the current user
+      if (session.userId !== userId) {
+        return res.status(403).json({ error: "You don't have access to this chat session" });
+      }
+      
+      const parsedData = insertChatMessageSchema.safeParse({
+        sessionId,
+        userId,
+        sender,
+        content,
+        contentHtml: contentHtml || null,
+        metadata: metadata || {}
+      });
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ error: "Invalid chat message data" });
+      }
+      
+      const message = await storage.createChatMessage(parsedData.data);
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error adding message to chat session:", error);
+      res.status(500).json({ error: "Failed to add message to chat session" });
+    }
   });
 
   const httpServer = createServer(app);

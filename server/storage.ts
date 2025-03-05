@@ -1,24 +1,49 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { 
+  type User, 
+  type InsertUser, 
+  type ChatSession, 
+  type InsertChatSession, 
+  type ChatMessage, 
+  type InsertChatMessage, 
+  type ChatSessionWithPreview 
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { dbStorage } from "./db";
+import { log } from "./vite";
 
-// Storage interface with required methods
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  // Chat history methods
+  createChatSession(session: InsertChatSession): Promise<ChatSession>;
+  getChatSession(id: number): Promise<ChatSession | undefined>;
+  getUserChatSessions(userId: number): Promise<ChatSession[]>;
+  updateChatSessionTitle(id: number, title: string): Promise<ChatSession | undefined>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  getChatMessages(sessionId: number): Promise<ChatMessage[]>;
+  getChatSessionsWithPreview(userId: number, limit?: number): Promise<ChatSessionWithPreview[]>;
   sessionStore: any; // Using any for session store to avoid typing issues
 }
 
 // Memory-based storage implementation
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  currentId: number;
+  private chatSessions: Map<number, ChatSession>;
+  private chatMessages: Map<number, ChatMessage>;
+  currentUserId: number;
+  currentSessionId: number;
+  currentMessageId: number;
   sessionStore: any; // Using any for session store to avoid typing issues
 
   constructor() {
     this.users = new Map();
-    this.currentId = 1;
+    this.chatSessions = new Map();
+    this.chatMessages = new Map();
+    this.currentUserId = 1;
+    this.currentSessionId = 1;
+    this.currentMessageId = 1;
     
     // Initialize session store
     const MemoryStore = createMemoryStore(session);
@@ -40,6 +65,7 @@ export class MemStorage implements IStorage {
     }
   }
 
+  // User methods
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -51,7 +77,7 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
+    const id = this.currentUserId++;
     const now = new Date();
     const user: User = { 
       ...insertUser, 
@@ -61,7 +87,105 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
+
+  // Chat session methods
+  async createChatSession(sessionData: InsertChatSession): Promise<ChatSession> {
+    const id = this.currentSessionId++;
+    const now = new Date();
+    const session: ChatSession = {
+      ...sessionData,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      metadata: sessionData.metadata || {}
+    };
+    this.chatSessions.set(id, session);
+    return session;
+  }
+
+  async getChatSession(id: number): Promise<ChatSession | undefined> {
+    return this.chatSessions.get(id);
+  }
+
+  async getUserChatSessions(userId: number): Promise<ChatSession[]> {
+    return Array.from(this.chatSessions.values())
+      .filter(session => session.userId === userId);
+  }
+
+  async updateChatSessionTitle(id: number, title: string): Promise<ChatSession | undefined> {
+    const session = this.chatSessions.get(id);
+    if (!session) return undefined;
+    
+    const updatedSession = {
+      ...session,
+      title,
+      updatedAt: new Date()
+    };
+    this.chatSessions.set(id, updatedSession);
+    return updatedSession;
+  }
+
+  // Chat message methods
+  async createChatMessage(messageData: InsertChatMessage): Promise<ChatMessage> {
+    const id = this.currentMessageId++;
+    const now = new Date();
+    const message: ChatMessage = {
+      ...messageData,
+      id,
+      timestamp: now,
+      contentHtml: messageData.contentHtml || null,
+      metadata: messageData.metadata || {}
+    };
+    this.chatMessages.set(id, message);
+    
+    // Also update the session's updatedAt time
+    const session = await this.getChatSession(messageData.sessionId);
+    if (session) {
+      await this.updateChatSessionTitle(session.id, session.title);
+    }
+    
+    return message;
+  }
+
+  async getChatMessages(sessionId: number): Promise<ChatMessage[]> {
+    return Array.from(this.chatMessages.values())
+      .filter(message => message.sessionId === sessionId)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }
+
+  async getChatSessionsWithPreview(userId: number, limit: number = 10): Promise<ChatSessionWithPreview[]> {
+    const sessions = await this.getUserChatSessions(userId);
+    
+    const result: ChatSessionWithPreview[] = [];
+    for (const session of sessions) {
+      const messages = await this.getChatMessages(session.id);
+      const latestMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+      
+      result.push({
+        ...session,
+        latestMessage
+      });
+    }
+    
+    // Sort by updatedAt descending and limit results
+    return result
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .slice(0, limit);
+  }
 }
 
-// Export a singleton instance of the storage
-export const storage = new MemStorage();
+// Try to determine if we should use PostgreSQL or in-memory storage
+const useDatabase = !!process.env.DATABASE_URL;
+
+// Export the appropriate storage implementation
+let storage: IStorage;
+
+if (useDatabase) {
+  log("Using PostgreSQL database for storage", "storage");
+  storage = dbStorage;
+} else {
+  log("Using in-memory storage (no database connection found)", "storage");
+  storage = new MemStorage();
+}
+
+export { storage };

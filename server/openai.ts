@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { storage } from "./storage";
 
 // Initialize the OpenAI client
 // Note: This uses the environment variable OPENAI_API_KEY
@@ -9,6 +10,13 @@ const openai = new OpenAI({
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+}
+
+// Interface for chat streaming data context
+export interface StreamingContext {
+  sessionId: number;
+  userId: number;
+  isNewSession: boolean;
 }
 
 /**
@@ -42,7 +50,8 @@ export async function getChatCompletion(
 // New function for streaming chat completions
 export async function getChatCompletionStream(
   messages: ChatMessage[],
-  res: any
+  res: any,
+  streamingContext?: StreamingContext
 ): Promise<void> {
   try {
     console.log(
@@ -77,11 +86,33 @@ export async function getChatCompletionStream(
         res.write(`data: ${JSON.stringify({ 
           content, 
           done: false,
-          timestamp: new Date().toLocaleTimeString()
+          timestamp: new Date().toLocaleTimeString(),
+          ...(streamingContext && { sessionId: streamingContext.sessionId, isNewSession: streamingContext.isNewSession })
         })}\n\n`);
         
         // Ensure data is sent immediately
         res.flush?.();
+      }
+    }
+    
+    // If we have context info, save the complete response to the database
+    if (streamingContext) {
+      try {
+        await storage.createChatMessage({
+          sessionId: streamingContext.sessionId,
+          userId: streamingContext.userId,
+          sender: "ai",
+          content: fullResponse,
+          contentHtml: null, // Can add HTML formatting if needed
+          metadata: {
+            timestamp: new Date().toISOString(),
+            model: "gpt-4o-mini", // Replace with actual model used
+            streaming: true
+          }
+        });
+      } catch (dbError) {
+        console.error("Error saving streamed response to database:", dbError);
+        // We'll continue even if saving to DB fails
       }
     }
     
@@ -90,7 +121,8 @@ export async function getChatCompletionStream(
       content: "", 
       done: true, 
       fullResponse,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
+      ...(streamingContext && { sessionId: streamingContext.sessionId, isNewSession: streamingContext.isNewSession })
     })}\n\n`);
     
     res.end();
@@ -101,7 +133,8 @@ export async function getChatCompletionStream(
     res.write(`data: ${JSON.stringify({ 
       error: "Failed to get response from AI service", 
       done: true,
-      timestamp: new Date().toLocaleTimeString() 
+      timestamp: new Date().toLocaleTimeString(),
+      ...(streamingContext && { sessionId: streamingContext.sessionId, isNewSession: streamingContext.isNewSession })
     })}\n\n`);
     
     res.end();
