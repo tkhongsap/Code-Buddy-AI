@@ -60,6 +60,34 @@
   --secondary-foreground: var(--light-text);
   --muted: var(--light-secondary-bg);
   --muted-foreground: var(--light-text-muted);
+
+/* Avatar customizations to match theme */
+.dropdown-menu .avatar {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: var(--radius);
+}
+
+.dropdown-menu .avatar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.dark .dropdown-menu .avatar {
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* Custom style for user menu avatar */
+.user-avatar {
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.dark .user-avatar {
+  background-color: var(--muted);
+  border-color: var(--accent);
+}
+
   --accent: var(--light-accent);
   --accent-foreground: white;
   --destructive: #FF453A;

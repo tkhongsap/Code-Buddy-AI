@@ -214,7 +214,7 @@ export default function ChatInterface() {
         <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900">
           {/* Header */}
           <div className="border-b bg-slate-900 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between dropdown-menu">
               <div className="flex items-center">
                 <div className="h-10 w-10 rounded-sm bg-primary flex items-center justify-center text-white mr-3 shadow-lg border border-indigo-400/20">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
