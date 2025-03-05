@@ -14,7 +14,7 @@ export default function AuthPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
-  const [loginData, setLoginData] = useState({ username: "demo", password: "demo" });
+  const [loginData, setLoginData] = useState({ username: "demo", password: "1234" });
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [activeTab, setActiveTab] = useState<string>("login");
 
@@ -148,7 +148,7 @@ export default function AuthPage() {
                           className="w-full mt-2" 
                           onClick={() => {
                             // Use our demo user credentials
-                            loginMutation.mutate({ username: "demo", password: "demo" });
+                            loginMutation.mutate({ username: "demo", password: "1234" });
                           }}
                           disabled={loginMutation.isPending}
                         >
