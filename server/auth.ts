@@ -116,8 +116,31 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt for user:", req.body.username);
+    
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Authentication failed: Invalid credentials");
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Session login error:", loginErr);
+          return next(loginErr);
+        }
+        
+        console.log("Authentication successful for user:", user.username);
+        console.log("Session ID:", req.sessionID);
+        return res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -128,7 +151,18 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    console.log("GET /api/user - Session ID:", req.sessionID);
+    console.log("User authenticated:", req.isAuthenticated());
+    if (req.user) {
+      console.log("User in session:", req.user.username);
+    } else {
+      console.log("No user in session");
+    }
+    
+    if (!req.isAuthenticated()) {
+      return res.sendStatus(401);
+    }
+    
     res.json(req.user);
   });
 }
