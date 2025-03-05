@@ -48,6 +48,22 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null); // Reference to the EventSource
   
+  // Fetch chat sessions
+  const { data: chatSessions = [], refetch: refetchChatSessions } = useQuery<any[]>({
+    queryKey: ["/api/chat-sessions"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "/api/chat-sessions");
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching chat sessions:", error);
+        return [];
+      }
+    },
+    // Disable for now until authentication is enabled
+    enabled: false
+  });
+  
   // Fetch saved responses
   const { data: savedResponses = [], refetch: refetchSavedResponses } = useQuery<SavedResponse[]>({
     queryKey: ["/api/saved-responses"],
@@ -56,6 +72,9 @@ export default function ChatInterface() {
       return mockSavedResponses;
     },
   });
+  
+  // Active chat session state
+  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
 
   // Configure Marked options with simpler approach
   useEffect(() => {
@@ -109,10 +128,19 @@ export default function ChatInterface() {
       // Call the real API endpoint
       const response = await apiRequest("POST", "/api/chat", {
         message: messageData.message,
-        conversationHistory: messageData.conversationHistory
+        conversationHistory: messageData.conversationHistory,
+        sessionId: currentSessionId
       });
       
       const data = await response.json();
+      
+      // If this created a new session, update our session ID
+      if (data.sessionId && currentSessionId === null) {
+        setCurrentSessionId(data.sessionId);
+        // Refresh sessions list
+        refetchChatSessions();
+      }
+      
       return data.response;
     },
     onSuccess: (response, variables) => {
@@ -220,7 +248,8 @@ export default function ChatInterface() {
       // Create POST request body
       const requestBody = JSON.stringify({
         message: userQuestion,
-        conversationHistory
+        conversationHistory,
+        sessionId: currentSessionId
       });
       
       // Use EventSource for streaming response
@@ -377,6 +406,56 @@ export default function ChatInterface() {
 
   const saveResponse = (messageId: number) => {
     saveResponseMutation.mutate(messageId);
+  };
+  
+  // Load chat session
+  const loadChatSession = async (sessionId: number) => {
+    try {
+      setCurrentSessionId(sessionId);
+      
+      // Fetch messages for this session
+      const response = await apiRequest("GET", `/api/chat-sessions/${sessionId}/messages`);
+      const messagesData = await response.json();
+      
+      // Convert backend messages to UI format
+      const formattedMessages: Message[] = messagesData.map((msg: any, index: number) => ({
+        id: index + 1,
+        sender: msg.role === 'user' ? 'user' : 'ai',
+        content: msg.content,
+        timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString(),
+        html: msg.role === 'assistant' ? formatAIResponse(msg.content) : undefined
+      }));
+      
+      // Add default welcome message if empty
+      if (formattedMessages.length === 0) {
+        formattedMessages.push({
+          id: 1,
+          sender: 'ai',
+          content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
+          timestamp: new Date().toLocaleTimeString()
+        });
+      }
+      
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error("Error loading chat session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load chat session. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Create new chat session
+  const createNewSession = () => {
+    setCurrentSessionId(null);
+    setMessages([{
+      id: 1,
+      sender: 'ai',
+      content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
+      timestamp: new Date().toLocaleTimeString()
+    }]);
   };
 
   // Scroll to bottom when messages change
