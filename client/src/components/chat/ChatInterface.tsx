@@ -43,7 +43,10 @@ export default function ChatInterface() {
   ]);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [useStreaming, setUseStreaming] = useState(true); // Toggle for streaming responses
+  const [streamingResponse, setStreamingResponse] = useState(""); // Current streaming response
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null); // Reference to the EventSource
   
   // Fetch saved responses
   const { data: savedResponses = [], refetch: refetchSavedResponses } = useQuery<SavedResponse[]>({
@@ -179,6 +182,164 @@ export default function ChatInterface() {
     }
   });
 
+  // Clean up any existing EventSource
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle streaming response
+  const handleStreamedResponse = async (userQuestion: string, conversationHistory: Message[]) => {
+    try {
+      // Clean up any existing EventSource
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      
+      // Create a placeholder message for the streaming response
+      const newMessageId = messages.length + 1;
+      setMessages(prev => [
+        ...prev,
+        {
+          id: newMessageId,
+          sender: 'ai',
+          content: '',
+          timestamp: new Date().toLocaleTimeString(),
+          html: ''
+        }
+      ]);
+      
+      // Reset streaming response
+      setStreamingResponse('');
+      
+      // Create POST request body
+      const requestBody = JSON.stringify({
+        message: userQuestion,
+        conversationHistory
+      });
+      
+      // Use EventSource for streaming response
+      // For browsers that don't support native EventSource with POST
+      // we handle it manually with fetch and event parsing
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: requestBody
+      });
+      
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body reader could not be created');
+      }
+      
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let completeResponse = '';
+      
+      // Process the stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // Decode the chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process any complete events in the buffer
+        let eventStart = 0;
+        let eventEnd = buffer.indexOf('\n\n', eventStart);
+        
+        while (eventEnd > -1) {
+          const eventData = buffer.substring(eventStart, eventEnd);
+          if (eventData.startsWith('data: ')) {
+            try {
+              const jsonData = JSON.parse(eventData.slice(6)); // Remove 'data: ' prefix
+              
+              if (jsonData.error) {
+                throw new Error(jsonData.error);
+              }
+              
+              if (!jsonData.done) {
+                // Update streaming response with new content
+                completeResponse += jsonData.content;
+                setStreamingResponse(completeResponse);
+                
+                // Update message in real-time
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === newMessageId 
+                      ? {
+                          ...msg,
+                          content: completeResponse,
+                          html: formatAIResponse(completeResponse)
+                        } 
+                      : msg
+                  )
+                );
+              } else if (jsonData.done && jsonData.fullResponse) {
+                // Final response received
+                completeResponse = jsonData.fullResponse;
+                setStreamingResponse(completeResponse);
+                
+                // Update message with complete response
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === newMessageId 
+                      ? {
+                          ...msg,
+                          content: completeResponse,
+                          html: formatAIResponse(completeResponse)
+                        } 
+                      : msg
+                  )
+                );
+                
+                setIsTyping(false);
+              }
+            } catch (error) {
+              console.error('Error parsing streamed response:', error);
+            }
+          }
+          
+          // Move to next event
+          eventStart = eventEnd + 2;
+          eventEnd = buffer.indexOf('\n\n', eventStart);
+        }
+        
+        // Keep any unprocessed partial event in the buffer
+        buffer = buffer.substring(eventStart);
+      }
+      
+    } catch (error) {
+      console.error('Error with streaming response:', error);
+      setIsTyping(false);
+      
+      toast({
+        title: "Error",
+        description: "Failed to communicate with AI service. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Add error message to chat
+      setMessages(prev => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          sender: 'ai',
+          content: "I'm sorry, I'm having trouble connecting to my AI service. Please try again in a moment.",
+          timestamp: new Date().toLocaleTimeString()
+        }
+      ]);
+    }
+  };
+
   const sendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (newMessage.trim() === '' || isTyping) return;
@@ -202,11 +363,16 @@ export default function ChatInterface() {
     // We exclude the initial greeting and the message we just added
     const conversationHistory = messages.slice(1);
     
-    // Send to API
-    await sendMessageMutation.mutateAsync({
-      message: userQuestion,
-      conversationHistory
-    });
+    // If streaming is enabled, use streaming API
+    if (useStreaming) {
+      await handleStreamedResponse(userQuestion, conversationHistory);
+    } else {
+      // Otherwise use regular API
+      await sendMessageMutation.mutateAsync({
+        message: userQuestion,
+        conversationHistory
+      });
+    }
   };
 
   const saveResponse = (messageId: number) => {
@@ -461,6 +627,21 @@ export default function ChatInterface() {
       <main className="flex-grow flex h-[calc(100vh-64px)]">
         {/* Chat area */}
         <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900">
+          {/* Streaming toggle */}
+          <div className="p-2 flex justify-end items-center gap-2 text-sm border-b dark:border-gray-700">
+            <span className="text-gray-600 dark:text-gray-300">
+              Response Mode:
+            </span>
+            <button
+              onClick={() => setUseStreaming(!useStreaming)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors 
+                ${useStreaming 
+                  ? 'bg-cyan-600 text-white' 
+                  : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+            >
+              {useStreaming ? 'Streaming' : 'Standard'}
+            </button>
+          </div>
           {/* Header */}
           <div className="border-b bg-slate-900 p-4">
             <div className="flex items-center justify-between dropdown-menu">

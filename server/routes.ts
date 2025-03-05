@@ -139,6 +139,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Temporarily disable authentication check for testing
     // if (!req.isAuthenticated()) return res.sendStatus(401);
 
+    const { message, conversationHistory = [], stream = false } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    try {
+      // Convert the conversation history to the format expected by OpenAI
+      const messages: ChatMessage[] = [
+        // System message to set the AI's behavior
+        {
+          role: "system",
+          content:
+            "You are AI Code Buddy, a highly intelligent and adaptive coding assistant. Your primary goal is to provide clear, concise, and context-aware responses to programming questions. Always detect the user's preferred language and respond in that language. When providing answers: - Include well-structured code examples when appropriate. - Offer step-by-step explanations for complex concepts. - Adapt your explanations based on the user's skill level. - If a user asks for best practices, security concerns, or performance optimizations, provide industry-standard guidance. - If the user provides incomplete or ambiguous questions, ask clarifying questions before responding. You specialize in: - Software development (frontend, backend, full-stack) - Web technologies (HTML, CSS, JavaScript, React, Node.js) - Databases (SQL, PostgreSQL, MongoDB) - DevOps (Docker, Kubernetes, CI/CD) Ensure that responses are engaging and educational, using language that matches the user's expertise level. If a user seems beginner-level, simplify explanations; if they are advanced, be more technical. Above all, be helpful, friendly, and precise in your responses.",
+        },
+        // Add conversation history
+        ...conversationHistory.map((msg: any) => ({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: msg.content,
+        })),
+        // Add the current message
+        {
+          role: "user",
+          content: message,
+        },
+      ];
+
+      // If stream is true, use streaming response, otherwise use regular response
+      if (stream) {
+        // Handle streaming response
+        await getChatCompletionStream(messages, res);
+        // The response is handled directly in the getChatCompletionStream function
+        // No need to send another response here
+      } else {
+        // Regular non-streaming response
+        const response = await getChatCompletion(messages);
+        
+        // Save the chat message to history in a real app
+        res.json({
+          response,
+          timestamp: new Date().toLocaleTimeString(),
+        });
+      }
+    } catch (error) {
+      // This catch block only applies to the non-streaming case
+      // Streaming errors are handled inside getChatCompletionStream
+      console.error("Error in chat endpoint:", error);
+      res.status(500).json({
+        error: "Failed to get response from AI service",
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    }
+  });
+  
+  // Dedicated streaming chat endpoint (for clearer separation of concerns)
+  app.post("/api/chat/stream", async (req, res) => {
+    // Temporarily disable authentication check for testing
+    // if (!req.isAuthenticated()) return res.sendStatus(401);
+
     const { message, conversationHistory = [] } = req.body;
 
     if (!message) {
@@ -166,16 +225,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       ];
 
-      // Get response from OpenAI
-      const response = await getChatCompletion(messages);
-
-      // Save the chat message to history in a real app
-      res.json({
-        response,
-        timestamp: new Date().toLocaleTimeString(),
-      });
+      // Process as a streaming response
+      await getChatCompletionStream(messages, res);
+      
     } catch (error) {
-      console.error("Error in chat endpoint:", error);
+      console.error("Error in streaming chat endpoint:", error);
+      // Error handling should happen inside getChatCompletionStream
+      // This is just a fallback in case the function throws instead of handling internally
       res.status(500).json({
         error: "Failed to get response from AI service",
         timestamp: new Date().toLocaleTimeString(),
