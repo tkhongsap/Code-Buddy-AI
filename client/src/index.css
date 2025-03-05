@@ -152,10 +152,13 @@ pre, code {
   background: #525252;
 }
 
-/* AI Chat Formatting */
+/* AI Chat Formatting with Markdown Support */
+.ai-formatted-message {
+  line-height: 1.6;
+}
+
 .ai-formatted-message p {
-  margin-bottom: 0.75rem;
-  line-height: 1.5;
+  margin-bottom: 1rem;
 }
 
 .ai-formatted-message h1,
@@ -167,24 +170,27 @@ pre, code {
   font-weight: 600;
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
+  line-height: 1.3;
 }
 
 .ai-formatted-message h1 { font-size: 1.5rem; }
 .ai-formatted-message h2 { font-size: 1.25rem; }
 .ai-formatted-message h3 { font-size: 1.125rem; }
 .ai-formatted-message h4 { font-size: 1rem; }
+.ai-formatted-message h5 { font-size: 0.875rem; }
+.ai-formatted-message h6 { font-size: 0.85rem; }
 
-.ai-formatted-message ul.ai-list,
-.ai-formatted-message ol.ai-list {
+.ai-formatted-message ul,
+.ai-formatted-message ol {
   margin-bottom: 1rem;
   padding-left: 1.5rem;
 }
 
-.ai-formatted-message ul.ai-list {
+.ai-formatted-message ul {
   list-style-type: disc;
 }
 
-.ai-formatted-message ol.ai-list {
+.ai-formatted-message ol {
   list-style-type: decimal;
 }
 
@@ -192,16 +198,37 @@ pre, code {
   margin-bottom: 0.5rem;
 }
 
-.ai-formatted-message code.inline-code {
+.ai-formatted-message li > ul,
+.ai-formatted-message li > ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-formatted-message code:not(.code-block code) {
   font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace;
   font-size: 0.9em;
   background-color: rgba(0, 0, 0, 0.05);
   border-radius: 3px;
   padding: 0.2em 0.4em;
+  white-space: nowrap;
 }
 
-.dark .ai-formatted-message code.inline-code {
+.dark .ai-formatted-message code:not(.code-block code) {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.ai-formatted-message blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 1rem;
+  color: rgba(107, 114, 128, 1);
+}
+
+.dark .ai-formatted-message blockquote {
+  border-left-color: #4b5563;
+  color: rgba(156, 163, 175, 1);
 }
 
 .ai-formatted-message strong {
@@ -210,6 +237,44 @@ pre, code {
 
 .ai-formatted-message em {
   font-style: italic;
+}
+
+.ai-formatted-message table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1rem;
+  font-size: 0.9em;
+}
+
+.ai-formatted-message table th,
+.ai-formatted-message table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+}
+
+.dark .ai-formatted-message table th,
+.dark .ai-formatted-message table td {
+  border-color: #4b5563;
+}
+
+.ai-formatted-message table th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+  text-align: left;
+}
+
+.dark .ai-formatted-message table th {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ai-formatted-message hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+.dark .ai-formatted-message hr {
+  border-top-color: #4b5563;
 }
 
 @layer base {

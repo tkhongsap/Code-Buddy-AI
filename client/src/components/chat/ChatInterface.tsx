@@ -11,6 +11,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { mockSavedResponses } from "@/lib/mock-data";
+import { marked } from 'marked';
+import * as DOMPurify from 'isomorphic-dompurify';
 
 interface Message {
   id: number;
@@ -51,39 +53,39 @@ export default function ChatInterface() {
     },
   });
 
-  // Format AI response text
+  // Configure Marked options
+  useEffect(() => {
+    // Create a custom renderer to handle code blocks
+    const renderer = new marked.Renderer();
+    
+    // Override the code block rendering
+    renderer.code = (code, language) => {
+      const lang = language || 'javascript';
+      return `<div class="code-block" data-language="${lang}">${code}</div>`;
+    };
+    
+    // Set marked options
+    marked.setOptions({
+      renderer: renderer,
+      breaks: true,
+      gfm: true,
+    });
+  }, []);
+
+  // Format AI response text using marked
   const formatAIResponse = (text: string): string => {
-    return text
-      // Format code blocks with language specification
-      .replace(/```(.+?)\n([\s\S]*?)```/g, (_, language, code) => {
-        // Trim potential empty line at start and end of code block
-        const trimmedCode = code.trim();
-        return `<div class="code-block" data-language="${language.trim()}">${trimmedCode}</div>`;
-      })
-      // Format inline code
-      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-      // Format headers (# Header)
-      .replace(/^(#{1,6})\s+(.+)$/gm, (_, hashes, content) => {
-        const level = hashes.length;
-        return `<h${level} class="ai-heading">${content}</h${level}>`;
-      })
-      // Format unordered lists
-      .replace(/^(\s*)-\s+(.+)$/gm, '<ul class="ai-list"><li>$2</li></ul>')
-      // Format ordered lists
-      .replace(/^(\s*)\d+\.\s+(.+)$/gm, '<ol class="ai-list"><li>$2</li></ol>')
-      // Format bold text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      // Format italic text
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // Format paragraphs (lines with content)
-      .replace(/^(.+)$/gm, (match) => {
-        // Don't wrap lines that are already HTML tags
-        if (match.startsWith('<') && match.endsWith('>')) return match;
-        return `<p>${match}</p>`;
-      })
-      // Clean up any double-wrapped paragraphs
-      .replace(/<p><(h\d|ul|ol|div|pre|code)>/g, '<$1>')
-      .replace(/<\/(h\d|ul|ol|div|pre|code)><\/p>/g, '</$1>');
+    try {
+      // First pass the text through marked for markdown conversion
+      const htmlContent = marked.parse(text);
+      
+      // Sanitize HTML to prevent XSS
+      const sanitizedHtml = DOMPurify.sanitize(htmlContent);
+      
+      return sanitizedHtml;
+    } catch (error) {
+      console.error('Error formatting markdown:', error);
+      return `<p>${text}</p>`;
+    }
   };
 
   // Send message mutation
