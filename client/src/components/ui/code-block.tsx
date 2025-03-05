@@ -16,6 +16,7 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   // Normalize language name for Prism
   const normalizeLanguage = (lang: string): string => {
     // Map common language names to Prism's language identifiers
+    // Only include languages that we actually load
     const languageMap: Record<string, string> = {
       'js': 'javascript',
       'py': 'python',
@@ -30,14 +31,7 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
       'sh': 'bash',
       'md': 'markdown',
       'sql': 'sql',
-      'c': 'c',
-      'cpp': 'cpp',
-      'cs': 'csharp',
       'java': 'java',
-      'rb': 'ruby',
-      'php': 'php',
-      'go': 'go',
-      'rust': 'rust',
     };
 
     return languageMap[lang.toLowerCase()] || lang.toLowerCase();
@@ -62,17 +56,10 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           await import('prismjs/components/prism-bash');
           await import('prismjs/components/prism-markdown');
           
-          // Import additional languages
-          await import('prismjs/components/prism-python');
-          await import('prismjs/components/prism-sql');
-          await import('prismjs/components/prism-java');
-          await import('prismjs/components/prism-c');
-          await import('prismjs/components/prism-cpp');
-          await import('prismjs/components/prism-csharp');
-          await import('prismjs/components/prism-ruby');
-          await import('prismjs/components/prism-go');
-          await import('prismjs/components/prism-rust');
-          await import('prismjs/components/prism-php');
+          // Import additional languages - limiting to most common ones to avoid TypeScript errors
+          try { await import('prismjs/components/prism-python'); } catch (e) { console.warn('Failed to load Python syntax', e); }
+          try { await import('prismjs/components/prism-sql'); } catch (e) { console.warn('Failed to load SQL syntax', e); }
+          try { await import('prismjs/components/prism-java'); } catch (e) { console.warn('Failed to load Java syntax', e); }
           
           // Highlight the code after all languages are loaded
           if (codeRef.current) {
@@ -88,26 +75,74 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   }, [code, normalizedLang, theme]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      toast({
-        title: "Copied!",
-        description: "Code copied to clipboard",
-        duration: 2000,
-      });
+    try {
+      // Create a temporary textarea element to copy text
+      const textArea = document.createElement("textarea");
+      textArea.value = code;
+      
+      // Make the textarea out of viewport
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      
+      // Select and copy the text
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      
+      // Clean up
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setCopied(true);
+        toast({
+          title: "Copied!",
+          description: "Code copied to clipboard",
+          duration: 2000,
+        });
+      } else {
+        throw new Error("Copy command was unsuccessful");
+      }
       
       setTimeout(() => {
         setCopied(false);
       }, 2000);
-    }).catch(err => {
+    } catch (err) {
       console.error('Failed to copy: ', err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to copy code",
-        duration: 2000,
-      });
-    });
+      
+      // Fallback to the modern API if available
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code)
+          .then(() => {
+            setCopied(true);
+            toast({
+              title: "Copied!",
+              description: "Code copied to clipboard",
+              duration: 2000,
+            });
+            
+            setTimeout(() => {
+              setCopied(false);
+            }, 2000);
+          })
+          .catch(() => {
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to copy code",
+              duration: 2000,
+            });
+          });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Clipboard functionality not available in your browser",
+          duration: 2000,
+        });
+      }
+    }
   };
 
   return (
