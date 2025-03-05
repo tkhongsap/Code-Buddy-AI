@@ -127,20 +127,20 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow bg-slate-900 py-6 px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow dark:bg-slate-900 bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
               <div className="flex items-center mb-2">
                 <div className="h-6 w-1 bg-primary mr-2"></div>
-                <h1 className="text-2xl sm:text-3xl font-bold font-mono tracking-tight">DEVELOPER CONSOLE</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold font-mono tracking-tight dark:text-white text-slate-800">DEVELOPER CONSOLE</h1>
               </div>
-              <p className="text-muted-foreground mt-1 pl-3 border-l border-slate-700 text-sm font-mono">// track your progress and coding activity</p>
+              <p className="text-muted-foreground mt-1 pl-3 border-l dark:border-slate-700 border-slate-300 text-sm font-mono">// track your progress and coding activity</p>
             </div>
             <div className="mt-4 sm:mt-0">
               <Button 
                 onClick={() => navigate("/chat")} 
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 shadow-md"
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-md"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -156,7 +156,7 @@ export default function Dashboard() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-primary flex items-center justify-center mr-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                       <path d="M13 8.2a2 2 0 1 0-3 1.8L8 14l4-1 .1 0a2 2 0 1 0 1-4.8"></path>
@@ -181,7 +181,7 @@ export default function Dashboard() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center mr-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
                     </svg>
@@ -205,7 +205,7 @@ export default function Dashboard() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center mr-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
                       <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
@@ -230,7 +230,7 @@ export default function Dashboard() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 flex items-center justify-center mr-4">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                     </svg>
@@ -341,7 +341,7 @@ export default function Dashboard() {
                 {/* Recommendation 1 */}
                 <div className="border border-border rounded-lg p-4">
                   <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-blue-100 dark:bg-blue-900/30 text-primary flex items-center justify-center mr-3">
+                    <div className="h-8 w-8 rounded bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
@@ -361,7 +361,7 @@ export default function Dashboard() {
                 {/* Recommendation 2 */}
                 <div className="border border-border rounded-lg p-4">
                   <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center mr-3">
+                    <div className="h-8 w-8 rounded bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="m18 16 4-4-4-4"></path>
                         <path d="m6 8-4 4 4 4"></path>
@@ -382,7 +382,7 @@ export default function Dashboard() {
                 {/* Recommendation 3 */}
                 <div className="border border-border rounded-lg p-4">
                   <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center mr-3">
+                    <div className="h-8 w-8 rounded bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
