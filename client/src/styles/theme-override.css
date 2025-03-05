@@ -1,0 +1,97 @@
+:root {
+  /* Light Theme Variables (Based on Color Guidelines) */
+  --light-bg: #FAFAFA;
+  --light-text: #333333;
+  --light-border: #E0E0E0;
+  --light-accent: #007ACC;
+  --light-secondary-bg: #F2F2F2;
+  --light-hover: #F5F5F5;
+  --light-card-bg: #FFFFFF;
+  --light-muted: #757575;
+  
+  /* Dark Theme Variables (Based on Color Guidelines) */
+  --dark-bg: #1C1C1C;
+  --dark-text: #F5F5F5;
+  --dark-border: #383838;
+  --dark-accent: #2196F3;
+  --dark-secondary-bg: #212121;
+  --dark-hover: #2A2A2A;
+  --dark-card-bg: #252526;
+  --dark-muted: #a0a0a0;
+}
+
+/* Applying theme variables to Tailwind CSS variables */
+:root {
+  --background: var(--light-bg);
+  --foreground: var(--light-text);
+  --card: var(--light-card-bg);
+  --card-foreground: var(--light-text);
+  --popover: var(--light-card-bg);
+  --popover-foreground: var(--light-text);
+  --primary: var(--light-accent);
+  --primary-foreground: white;
+  --secondary: var(--light-secondary-bg);
+  --secondary-foreground: var(--light-text);
+  --muted: var(--light-secondary-bg);
+  --muted-foreground: var(--light-muted);
+  --accent: var(--light-secondary-bg);
+  --accent-foreground: var(--light-text);
+  --destructive: #ff4d4f;
+  --destructive-foreground: white;
+  --border: var(--light-border);
+  --input: var(--light-border);
+  --ring: var(--light-accent);
+}
+
+.dark {
+  --background: var(--dark-bg);
+  --foreground: var(--dark-text);
+  --card: var(--dark-card-bg);
+  --card-foreground: var(--dark-text);
+  --popover: var(--dark-card-bg);
+  --popover-foreground: var(--dark-text);
+  --primary: var(--dark-accent);
+  --primary-foreground: white;
+  --secondary: var(--dark-secondary-bg);
+  --secondary-foreground: var(--dark-text);
+  --muted: var(--dark-secondary-bg);
+  --muted-foreground: var(--dark-muted);
+  --accent: var(--dark-secondary-bg);
+  --accent-foreground: var(--dark-text);
+  --destructive: #ff4d4f;
+  --destructive-foreground: white;
+  --border: var(--dark-border);
+  --input: var(--dark-border);
+  --ring: var(--dark-accent);
+}
+
+/* Smooth transition between themes for better UX */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Button hover states that are consistent in both themes */
+button:hover:not([disabled]),
+.button:hover:not([disabled]) {
+  background-color: color-mix(in srgb, var(--primary) 90%, white);
+}
+
+.dark button:hover:not([disabled]),
+.dark .button:hover:not([disabled]) {
+  background-color: color-mix(in srgb, var(--primary) 90%, black);
+}
+
+/* Card styling with subtle shadows */
+.card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.dark .card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
