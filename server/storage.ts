@@ -7,14 +7,14 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any for session store to avoid typing issues
 }
 
 // Memory-based storage implementation
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   currentId: number;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any for session store to avoid typing issues
 
   constructor() {
     this.users = new Map();
@@ -52,7 +52,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId++;
-    const user: User = { ...insertUser, id };
+    const now = new Date();
+    const user: User = { 
+      ...insertUser, 
+      id,
+      createdAt: now 
+    };
     this.users.set(id, user);
     return user;
   }
