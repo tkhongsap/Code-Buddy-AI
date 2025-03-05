@@ -9,11 +9,16 @@ export default function Landing() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
-  // Instead of redirecting in a useEffect, we can conditionally render
-  // This way we avoid the error-prone redirection that may cause issues
+  // Use useEffect for navigation to avoid React rendering issues
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+  
+  // Return early if user is authenticated
   if (user) {
-    navigate("/dashboard");
-    return null; // Return null while navigating
+    return null; // Return null while navigation is pending
   }
 
   const scrollToFeatures = () => {

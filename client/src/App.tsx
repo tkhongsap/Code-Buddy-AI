@@ -29,14 +29,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router />
           <Toaster />
         </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
