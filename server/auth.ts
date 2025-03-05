@@ -23,13 +23,11 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   try {
+    // Special case for demo login with username "demo" and password "1234"
+    // This logic is handled separately in the LocalStrategy callback
+    
     // Split the stored password into hash and salt
     const [hashed, salt] = stored.split(".");
-    
-    // Special case for demo login
-    if (supplied === "1234" || supplied === "demo") {
-      return true;
-    }
     
     // Normal case - compute hash of supplied password with same salt
     const hashedBuf = Buffer.from(hashed, "hex");
@@ -64,6 +62,28 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
+      // Special case for demo login
+      if (username === "demo" && password === "1234") {
+        const demoUser = await storage.getUserByUsername("demo");
+        if (demoUser) {
+          return done(null, demoUser);
+        } else {
+          // If demo user doesn't exist, create it
+          try {
+            const hashedPassword = await hashPassword("1234");
+            const newDemoUser = await storage.createUser({
+              username: "demo",
+              password: hashedPassword
+            });
+            return done(null, newDemoUser);
+          } catch (error) {
+            console.error("Failed to create demo user:", error);
+            return done(null, false);
+          }
+        }
+      }
+
+      // Normal login flow
       const user = await storage.getUserByUsername(username);
       if (!user || !(await comparePasswords(password, user.password))) {
         return done(null, false);
