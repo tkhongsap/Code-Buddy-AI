@@ -1,26 +1,52 @@
 :root {
-  /* Light Theme Variables (Based on Color Guidelines) */
-  --light-bg: #FAFAFA;
-  --light-text: #333333;
-  --light-border: #E0E0E0;
-  --light-accent: #007ACC;
-  --light-secondary-bg: #F2F2F2;
-  --light-hover: #F5F5F5;
-  --light-card-bg: #FFFFFF;
-  --light-muted: #757575;
+  /* Light Theme Variables - Refined based on Guidelines */
+  --light-bg: #F2F2F2;               /* Softened from pure white */
+  --light-panel-bg: #FAFAFA;         /* Slightly darker for panel backgrounds */
+  --light-card-bg: #FFFFFF;          /* Kept white for cards to pop against the softer background */
+  --light-text: #333333;             /* Dark gray for strong contrast */
+  --light-text-secondary: #666666;   /* Secondary text with slightly less contrast */
+  --light-text-muted: #757575;       /* Muted text for less important information */
+  --light-border: #E0E0E0;           /* Subtle gray for borders and dividers */
+  --light-accent: #0075C9;           /* Primary accent color - adjusted for better contrast */
+  --light-accent-hover: #0062AA;     /* Darker variant for hover states */
+  --light-secondary-bg: #EAEAEA;     /* Background for secondary elements */
+  --light-hover: #F5F5F5;            /* Hover state background */
+  --light-focus-ring: rgba(0, 117, 201, 0.4); /* Focus indicator with transparency */
   
-  /* Dark Theme Variables (Based on Color Guidelines) */
-  --dark-bg: #1C1C1C;
-  --dark-text: #F5F5F5;
-  --dark-border: #383838;
-  --dark-accent: #2196F3;
-  --dark-secondary-bg: #212121;
-  --dark-hover: #2A2A2A;
-  --dark-card-bg: #252526;
-  --dark-muted: #a0a0a0;
+  /* Dark Theme Variables - Refined based on Guidelines */
+  --dark-bg: #212121;                /* Near-black rather than pure black */
+  --dark-panel-bg: #1C1C1C;          /* Slightly darker for panel differentiation */
+  --dark-card-bg: #2A2A2A;           /* Lighter than bg for cards to stand out */
+  --dark-text: #F5F5F5;              /* Near-white for readability */
+  --dark-text-secondary: #D0D0D0;    /* Secondary text with slightly less contrast */
+  --dark-text-muted: #A0A0A0;        /* Muted text for less important information */
+  --dark-border: #3A3A3A;            /* Slightly lighter than background for subtle separation */
+  --dark-accent: #4CC2FF;            /* Brighter accent color for dark mode visibility */
+  --dark-accent-hover: #73D0FF;      /* Lighter variant for hover in dark mode */
+  --dark-secondary-bg: #2D2D2D;      /* Background for secondary elements */
+  --dark-hover: #323232;             /* Hover state background */
+  --dark-focus-ring: rgba(76, 194, 255, 0.4); /* Focus indicator with transparency */
+  
+  /* Chart Colors - Consistent across themes */
+  --chart-green: #34C759;
+  --chart-blue: #2D88FF;
+  --chart-purple: #B46EFF;
+  --chart-orange: #FF9D0A;
+  --chart-red: #FF3B30;
+  --chart-teal: #5AC8FA;
+  
+  /* Spacing Scale - 8px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
 }
 
-/* Applying theme variables to Tailwind CSS variables */
+/* Applying refined theme variables to Tailwind CSS variables - Light Theme (default) */
 :root {
   --background: var(--light-bg);
   --foreground: var(--light-text);
@@ -33,16 +59,17 @@
   --secondary: var(--light-secondary-bg);
   --secondary-foreground: var(--light-text);
   --muted: var(--light-secondary-bg);
-  --muted-foreground: var(--light-muted);
-  --accent: var(--light-secondary-bg);
-  --accent-foreground: var(--light-text);
-  --destructive: #ff4d4f;
+  --muted-foreground: var(--light-text-muted);
+  --accent: var(--light-accent);
+  --accent-foreground: white;
+  --destructive: #FF453A;
   --destructive-foreground: white;
   --border: var(--light-border);
   --input: var(--light-border);
-  --ring: var(--light-accent);
+  --ring: var(--light-focus-ring);
 }
 
+/* Dark Theme Overrides */
 .dark {
   --background: var(--dark-bg);
   --foreground: var(--dark-text);
@@ -51,47 +78,193 @@
   --popover: var(--dark-card-bg);
   --popover-foreground: var(--dark-text);
   --primary: var(--dark-accent);
-  --primary-foreground: white;
+  --primary-foreground: #121212;
   --secondary: var(--dark-secondary-bg);
   --secondary-foreground: var(--dark-text);
   --muted: var(--dark-secondary-bg);
-  --muted-foreground: var(--dark-muted);
-  --accent: var(--dark-secondary-bg);
-  --accent-foreground: var(--dark-text);
-  --destructive: #ff4d4f;
+  --muted-foreground: var(--dark-text-muted);
+  --accent: var(--dark-accent);
+  --accent-foreground: #121212;
+  --destructive: #FF453A;
   --destructive-foreground: white;
   --border: var(--dark-border);
   --input: var(--dark-border);
-  --ring: var(--dark-accent);
+  --ring: var(--dark-focus-ring);
 }
 
-/* Smooth transition between themes for better UX */
+/* Typography improvements */
+body {
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.021em;
+}
+
+.dark h1, 
+.dark h2, 
+.dark h3, 
+.dark h4, 
+.dark h5, 
+.dark h6 {
+  font-weight: 500; /* Slightly bolder headings in dark mode for readability */
+}
+
+/* Smooth transition between themes with enhanced properties */
 *, *::before, *::after {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, 
+             border-color 0.25s ease, 
+             color 0.25s ease,
+             box-shadow 0.25s ease,
+             transform 0.2s ease;
 }
 
-/* Focus styles for accessibility */
+/* Improved focus styles for accessibility */
 *:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--ring);
 }
 
-/* Button hover states that are consistent in both themes */
+/* Enhanced button styles with hover and active states */
+button,
+.button {
+  position: relative;
+  font-weight: 500;
+}
+
 button:hover:not([disabled]),
 .button:hover:not([disabled]) {
-  background-color: color-mix(in srgb, var(--primary) 90%, white);
+  background-color: var(--light-accent-hover);
 }
 
 .dark button:hover:not([disabled]),
 .dark .button:hover:not([disabled]) {
-  background-color: color-mix(in srgb, var(--primary) 90%, black);
+  background-color: var(--dark-accent-hover);
 }
 
-/* Card styling with subtle shadows */
+button:active:not([disabled]),
+.button:active:not([disabled]) {
+  transform: translateY(1px);
+}
+
+/* Card styling with refined shadows and spacing */
 .card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: var(--space-4);
 }
 
 .dark .card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Form element improvements */
+input, select, textarea {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  border-radius: 4px; 
+  padding: var(--space-2) var(--space-3);
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+  background-color: var(--dark-secondary-bg);
+}
+
+input:focus, 
+select:focus, 
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Chart and visualization adjustments */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-opacity: 0.5;
+}
+
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke-opacity: 0.3;
+}
+
+/* Enhanced contrast for chart elements in dark mode */
+.dark .recharts-text {
+  fill: var(--dark-text-secondary);
+  font-weight: 500;
+}
+
+.dark .recharts-line .recharts-line-curve {
+  stroke-width: 2.5px; /* Makes lines more visible in dark mode */
+}
+
+/* Ensure icons are visible in both themes */
+.icon-light {
+  display: inline-block;
+}
+
+.icon-dark {
+  display: none;
+}
+
+.dark .icon-light {
+  display: none;
+}
+
+.dark .icon-dark {
+  display: inline-block;
+}
+
+/* Dashboard-specific improvements */
+.dashboard-metric {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.dashboard-metric-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  margin-right: var(--space-3);
+}
+
+.dashboard-metric-label {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin-bottom: var(--space-1);
+}
+
+.dashboard-metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-metric {
+    margin-bottom: var(--space-3);
+  }
+  
+  .dashboard-metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .dashboard-metric-value {
+    font-size: 20px;
+  }
 }
