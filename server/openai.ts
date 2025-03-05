@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 
 // Initialize the OpenAI client
-// Note: In production, you should use environment variables for your API keys
+// Note: This uses the environment variable OPENAI_API_KEY
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key', // Replace with your actual API key or use environment variable
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export interface ChatMessage {
@@ -18,6 +18,8 @@ export interface ChatMessage {
  */
 export async function getChatCompletion(messages: ChatMessage[]): Promise<string> {
   try {
+    console.log('Using OpenAI API key:', process.env.OPENAI_API_KEY ? 'Key is set' : 'Key is not set');
+    
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo', // You can change this to gpt-4 or other models
       messages,
@@ -32,4 +34,4 @@ export async function getChatCompletion(messages: ChatMessage[]): Promise<string
   }
 }
 
-export default openai; 
+export default openai;

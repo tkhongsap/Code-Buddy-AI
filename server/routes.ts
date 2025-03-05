@@ -64,7 +64,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(mockLearningData);
   });
 
-  // AI chat endpoint
+  // Simple chat endpoint (no authentication required)
+  app.post("/api/simple-chat", async (req, res) => {
+    const { message, conversationHistory = [] } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+    
+    try {
+      // Convert the conversation history to the format expected by OpenAI
+      const messages: ChatMessage[] = [
+        // System message to set the AI's behavior
+        {
+          role: 'system',
+          content: 'You are AI Code Buddy, a helpful coding assistant. Provide clear, concise answers to programming questions. Include code examples when appropriate, and explain concepts in a way that\'s easy to understand. You specialize in software development, web technologies, databases, and DevOps.'
+        },
+        // Add conversation history
+        ...conversationHistory.map((msg: any) => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        })),
+        // Add the current message
+        {
+          role: 'user',
+          content: message
+        }
+      ];
+      
+      console.log('Sending to OpenAI API:', JSON.stringify(messages));
+      
+      // Get response from OpenAI
+      const response = await getChatCompletion(messages);
+      console.log('Received from OpenAI API:', response);
+      
+      // Return the response
+      res.json({ 
+        response,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    } catch (error) {
+      console.error('Error in simple chat endpoint:', error);
+      res.status(500).json({ 
+        error: "Failed to get response from AI service",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toLocaleTimeString()
+      });
+    }
+  });
+
+  // AI chat endpoint (requires authentication)
   app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     

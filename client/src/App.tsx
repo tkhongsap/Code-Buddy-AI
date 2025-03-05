@@ -7,6 +7,7 @@ import Landing from "./components/Landing";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import ChatInterface from "./components/chat/ChatInterface";
+import SimpleChat from "./components/SimpleChat";
 import LearningProgress from "./components/learning/LearningProgress";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
@@ -17,6 +18,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/simple-chat" component={SimpleChat} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/chat" component={ChatInterface} />
       <ProtectedRoute path="/learning" component={LearningProgress} />
