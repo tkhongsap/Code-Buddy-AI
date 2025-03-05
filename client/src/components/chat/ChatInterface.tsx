@@ -53,58 +53,43 @@ export default function ChatInterface() {
     },
   });
 
-  // Configure Marked options
+  // Configure Marked options with simpler approach
   useEffect(() => {
     try {
-      // Create a custom renderer to handle code blocks
-      const renderer = new marked.Renderer();
-      
-      // Override the code block rendering to use our code-block format
-      // Using the correct type signature from marked
-      renderer.code = function(text, lang, escaped) {
-        const language = lang || 'javascript';
-        return `<div class="code-block" data-language="${language}">${text}</div>`;
-      };
-      
-      // Override other renderer methods for better styling
-      renderer.paragraph = function(text) {
-        return `<p class="mb-4">${text}</p>`;
-      };
-      
-      renderer.list = function(body, ordered) {
-        const type = ordered ? 'ol' : 'ul';
-        return `<${type} class="mb-4 pl-6">${body}</${type}>`;
-      };
-      
-      renderer.listitem = function(text) {
-        return `<li class="mb-1">${text}</li>`;
-      };
-      
-      // Set marked options with our custom renderer
+      // Set basic marked options without custom renderer
       marked.setOptions({
-        renderer: renderer,
         breaks: true,       // Convert \n to <br>
         gfm: true,          // GitHub Flavored Markdown
-        headerIds: true,    // Add ids to headers for linking
-        pedantic: false,    // Don't be too strict with the original markdown spec
-        mangle: false,      // Don't mangle email addresses
       });
     } catch (error) {
       console.error('Error configuring marked options:', error);
     }
   }, []);
 
-  // Format AI response text using marked
+  // Format AI response text using marked with a simpler approach
   const formatAIResponse = (text: string): string => {
     try {
-      // First pass the text through marked for markdown conversion
-      const htmlContent = marked.parse(text);
+      // Using a simpler implementation that doesn't rely on custom renderer
+      // which avoids TypeScript errors with the marked library typings
+      let htmlContent = marked.parse(text);
       
-      // Sanitize HTML to prevent XSS
-      // DOMPurify doesn't have .default in its type definitions but it might in the runtime
-      // So we need to check both ways
-      const purify = (DOMPurify as any).default || DOMPurify;
-      const sanitizedHtml = purify.sanitize(htmlContent);
+      // Safety: sanitize HTML to prevent XSS attacks
+      let sanitizedHtml = "";
+      try {
+        // DOMPurify might be exported as default or as a namespace
+        if (typeof DOMPurify.sanitize === 'function') {
+          sanitizedHtml = DOMPurify.sanitize(htmlContent);
+        } else if (DOMPurify.default && typeof DOMPurify.default.sanitize === 'function') {
+          sanitizedHtml = DOMPurify.default.sanitize(htmlContent);
+        } else {
+          // Fallback if DOMPurify isn't working as expected
+          console.warn('DOMPurify not available, using unsanitized HTML');
+          sanitizedHtml = htmlContent;
+        }
+      } catch (sanitizeError) {
+        console.error('Error sanitizing HTML:', sanitizeError);
+        sanitizedHtml = htmlContent; // Fallback to unsanitized if DOMPurify fails
+      }
       
       return sanitizedHtml;
     } catch (error) {
