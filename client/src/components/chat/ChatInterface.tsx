@@ -74,21 +74,18 @@ export default function ChatInterface() {
       let htmlContent = marked.parse(text);
       
       // Safety: sanitize HTML to prevent XSS attacks
-      let sanitizedHtml = "";
-      try {
-        // DOMPurify might be exported as default or as a namespace
-        if (typeof DOMPurify.sanitize === 'function') {
-          sanitizedHtml = DOMPurify.sanitize(htmlContent);
-        } else if (DOMPurify.default && typeof DOMPurify.default.sanitize === 'function') {
-          sanitizedHtml = DOMPurify.default.sanitize(htmlContent);
-        } else {
-          // Fallback if DOMPurify isn't working as expected
-          console.warn('DOMPurify not available, using unsanitized HTML');
-          sanitizedHtml = htmlContent;
-        }
-      } catch (sanitizeError) {
-        console.error('Error sanitizing HTML:', sanitizeError);
-        sanitizedHtml = htmlContent; // Fallback to unsanitized if DOMPurify fails
+      let sanitizedHtml: string;
+      
+      // Use type assertion to access DOMPurify's sanitize function
+      const purify = DOMPurify as any;
+      if (purify.sanitize) {
+        sanitizedHtml = purify.sanitize(htmlContent);
+      } else if (purify.default && purify.default.sanitize) {
+        sanitizedHtml = purify.default.sanitize(htmlContent);
+      } else {
+        // Fallback if DOMPurify isn't working as expected
+        console.warn('DOMPurify not available, using unsanitized HTML');
+        sanitizedHtml = htmlContent as string;
       }
       
       return sanitizedHtml;
@@ -217,41 +214,156 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Process code blocks after rendering with improved loading of Prism languages
+  // Process code blocks after rendering with improved detection and handling
   useEffect(() => {
-    const codeBlocks = document.querySelectorAll('.code-block');
+    // Target both standard markdown code elements and our old .code-block elements for backward compatibility
+    const codeElements = document.querySelectorAll('.ai-formatted-message pre code, .code-block');
     
-    if (codeBlocks.length === 0) return;
+    if (codeElements.length === 0) return;
     
     // Function to process code blocks after Prism is loaded
     const processCodeBlocks = (Prism: any) => {
-      codeBlocks.forEach(block => {
-        const language = block.getAttribute('data-language') || 'javascript';
-        const code = block.textContent || '';
-        
-        // Skip if already processed
-        if (block.querySelector('pre')) return;
-        
-        // Clear the block
-        while (block.firstChild) {
-          block.removeChild(block.firstChild);
-        }
-        
-        // Create new pre and code elements
-        const pre = document.createElement('pre');
-        pre.className = `language-${language}`;
-        const codeEl = document.createElement('code');
-        codeEl.className = `language-${language}`;
-        codeEl.textContent = code;
-        
-        pre.appendChild(codeEl);
-        block.appendChild(pre);
-        
-        // Highlight the code
-        try {
-          Prism.highlightElement(codeEl);
-        } catch (error) {
-          console.warn('Error highlighting code:', error);
+      codeElements.forEach(element => {
+        // Handle different types of code elements
+        if (element.classList.contains('code-block')) {
+          // Handle our custom code-block divs
+          const language = element.getAttribute('data-language') || 'javascript';
+          const code = element.textContent || '';
+          
+          // Skip if already processed
+          if (element.querySelector('pre')) return;
+          
+          // Clear the block
+          while (element.firstChild) {
+            element.removeChild(element.firstChild);
+          }
+          
+          // Create new pre and code elements
+          const pre = document.createElement('pre');
+          pre.className = `language-${language}`;
+          const codeEl = document.createElement('code');
+          codeEl.className = `language-${language}`;
+          codeEl.textContent = code;
+          
+          pre.appendChild(codeEl);
+          element.appendChild(pre);
+          
+          // Highlight the code
+          try {
+            Prism.highlightElement(codeEl);
+          } catch (error) {
+            console.warn('Error highlighting code-block:', error);
+          }
+        } else {
+          // Handle standard <code> elements inside <pre> tags that marked.js generates
+          try {
+            // Try to determine language from class (e.g., "language-python")
+            let language = 'javascript';
+            element.classList.forEach(className => {
+              if (className.startsWith('language-')) {
+                language = className.replace('language-', '');
+              }
+            });
+            
+            // Set language class if not already present
+            if (!element.classList.contains(`language-${language}`)) {
+              element.className = `language-${language}`;
+            }
+            
+            // Style the parent pre element for better appearance
+            const preElement = element.parentElement;
+            if (preElement && preElement.tagName === 'PRE') {
+              preElement.classList.add('code-block-pre');
+              
+              // Create a header for the code block if it doesn't exist
+              if (!preElement.previousElementSibling?.classList.contains('code-header')) {
+                const codeHeader = document.createElement('div');
+                codeHeader.className = 'code-header flex items-center justify-between px-4 py-2 text-xs border-b';
+                codeHeader.style.backgroundColor = 'var(--sidebar-bg, #1e1e1e)';
+                codeHeader.style.color = 'var(--code-fg, #d4d4d4)';
+                codeHeader.style.borderColor = 'var(--tab-border, #333333)';
+                
+                // Language badge
+                const langBadge = document.createElement('div');
+                langBadge.className = 'flex items-center gap-2';
+                langBadge.innerHTML = `
+                  <span class="flex space-x-1">
+                    <span class="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
+                    <span class="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
+                    <span class="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
+                  </span>
+                  <span class="font-semibold text-xs" style="color: var(--syntax-constant, #569CD6);">${language}</span>
+                `;
+                
+                // Copy button
+                const copyButton = document.createElement('button');
+                copyButton.className = 'transition-colors';
+                copyButton.style.color = 'var(--line-number, #858585)';
+                copyButton.title = 'Copy to clipboard';
+                copyButton.innerHTML = `
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                `;
+                
+                // Add copy functionality
+                copyButton.addEventListener('click', () => {
+                  navigator.clipboard.writeText(element.textContent || '');
+                  const originalTitle = copyButton.title;
+                  copyButton.title = "Copied!";
+                  setTimeout(() => {
+                    copyButton.title = originalTitle;
+                  }, 1500);
+                });
+                
+                codeHeader.appendChild(langBadge);
+                codeHeader.appendChild(copyButton);
+                
+                // Insert the header before the pre element
+                preElement.parentNode?.insertBefore(codeHeader, preElement);
+                
+                // Also style the pre element
+                preElement.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
+                preElement.style.color = 'var(--code-fg, #d4d4d4)';
+                preElement.style.margin = '0';
+                preElement.style.padding = '1rem';
+                preElement.style.borderRadius = '0';
+                preElement.style.overflow = 'auto';
+                
+                // Add a footer
+                const codeFooter = document.createElement('div');
+                codeFooter.className = 'code-footer px-4 py-1 text-xs border-t flex justify-between';
+                codeFooter.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
+                codeFooter.style.color = 'var(--syntax-comment, #6A9955)';
+                codeFooter.style.borderColor = 'var(--tab-border, #333333)';
+                codeFooter.innerHTML = `
+                  <span>// AI Code Buddy</span>
+                  <span>${new Date().toLocaleDateString()}</span>
+                `;
+                
+                // Insert footer after pre element
+                preElement.parentNode?.insertBefore(codeFooter, preElement.nextSibling);
+                
+                // Wrap the components in a container
+                const codeContainer = document.createElement('div');
+                codeContainer.className = 'code-container my-4 rounded-md overflow-hidden border shadow-md';
+                codeContainer.style.borderColor = 'var(--tab-border, #333333)';
+                
+                // Move elements into container
+                preElement.parentNode?.insertBefore(codeContainer, codeHeader);
+                codeContainer.appendChild(codeHeader);
+                codeContainer.appendChild(preElement);
+                codeContainer.appendChild(codeFooter);
+              }
+            }
+            
+            // Highlight with Prism
+            Prism.highlightElement(element);
+          } catch (error) {
+            console.warn('Error processing code element:', error);
+          }
         }
       });
     };
