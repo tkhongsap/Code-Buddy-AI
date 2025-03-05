@@ -53,72 +53,15 @@ export default function ChatInterface() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      // In a real implementation, this would send to the API
-      // For now, we'll simulate an API call with different responses
-      return new Promise<string>((resolve) => {
-        setTimeout(() => {
-          let response = '';
-          
-          // Simple pattern matching for demo
-          if (message.toLowerCase().includes('react') && message.toLowerCase().includes('hook')) {
-            response = `Here's how you can implement a React useEffect hook with cleanup:
-
-\`\`\`jsx
-useEffect(() => {
-  // Your effect code here
-  const subscription = someAPI.subscribe();
-
-  // Return a cleanup function
-  return () => {
-    subscription.unsubscribe();
-  };
-}, [dependency1, dependency2]);
-\`\`\`
-
-The cleanup function runs before the component unmounts or before the effect runs again due to dependency changes.`;
-          } 
-          else if (message.toLowerCase().includes('typescript') && (message.toLowerCase().includes('interface') || message.toLowerCase().includes('type'))) {
-            response = `In TypeScript, both interfaces and types can be used to define object shapes, but they have some differences:
-
-\`\`\`typescript
-// Interface
-interface User {
-  id: number;
-  name: string;
-  role?: string; // Optional property
-}
-
-// Type alias
-type User = {
-  id: number;
-  name: string;
-  role?: string;
-};
-\`\`\`
-
-Key differences:
-- Interfaces can be extended with the extends keyword
-- Types can use union and intersection operators
-- Interfaces can be merged when declared multiple times
-- Types can be used for primitives, unions, and tuples`;
-          } 
-          else {
-            response = `I understand you're asking about "${message}". Let me provide some guidance.
-
-This is a common topic in development. The best approach would typically involve:
-
-1. Understanding the core concepts first
-2. Following established patterns and best practices
-3. Testing thoroughly
-4. Optimizing for performance
-
-Would you like me to provide specific code examples or explain any particular aspect in more detail?`;
-          }
-          
-          resolve(response);
-        }, 1500);
+    mutationFn: async (messageData: { message: string; conversationHistory: Message[] }) => {
+      // Call the real API endpoint
+      const response = await apiRequest("POST", "/api/chat", {
+        message: messageData.message,
+        conversationHistory: messageData.conversationHistory
       });
+      
+      const data = await response.json();
+      return data.response;
     },
     onSuccess: (response, variables) => {
       setMessages(prev => [
@@ -128,12 +71,33 @@ Would you like me to provide specific code examples or explain any particular as
           sender: 'ai',
           content: response,
           timestamp: new Date().toLocaleTimeString(),
-          html: response.replace(/```(.+?)\n([\s\S]*?)```/g, (_, language, code) => {
+          html: response.replace(/```(.+?)\n([\s\S]*?)```/g, (_: string, language: string, code: string) => {
             return `<div class="code-block" data-language="${language}">${code}</div>`;
           })
         }
       ]);
       setIsTyping(false);
+    },
+    onError: (error) => {
+      console.error("Error sending message:", error);
+      setIsTyping(false);
+      
+      toast({
+        title: "Error",
+        description: "Failed to communicate with AI service. Please try again.",
+        variant: "destructive",
+      });
+
+      // Add error message to chat
+      setMessages(prev => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          sender: 'ai',
+          content: "I'm sorry, I'm having trouble connecting to my AI service. Please try again in a moment.",
+          timestamp: new Date().toLocaleTimeString()
+        }
+      ]);
     }
   });
 
@@ -187,8 +151,15 @@ Would you like me to provide specific code examples or explain any particular as
     setNewMessage('');
     setIsTyping(true);
     
-    // Send to API (mock)
-    await sendMessageMutation.mutateAsync(userQuestion);
+    // Prepare conversation history to send to the API
+    // We exclude the initial greeting and the message we just added
+    const conversationHistory = messages.slice(1);
+    
+    // Send to API
+    await sendMessageMutation.mutateAsync({
+      message: userQuestion,
+      conversationHistory
+    });
   };
 
   const saveResponse = (messageId: number) => {

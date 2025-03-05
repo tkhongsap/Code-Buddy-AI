@@ -1,6 +1,36 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Load environment variables in development mode
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // Simple environment variable loader
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      envContent.split('\n').forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+          const key = match[1];
+          let value = match[2] || '';
+          // Remove quotes if present
+          if (value.length > 0 && value.charAt(0) === '"' && value.charAt(value.length - 1) === '"') {
+            value = value.replace(/\\n/g, '\n');
+          }
+          process.env[key] = value;
+        }
+      });
+      log('Environment variables loaded from .env file');
+    } else {
+      log('No .env file found. Make sure to create one with your OpenAI API key.');
+    }
+  } catch (error) {
+    console.warn('Failed to load .env file:', error);
+  }
+}
 
 const app = express();
 app.use(express.json());

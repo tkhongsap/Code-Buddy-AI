@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { getChatCompletion, type ChatMessage } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -64,80 +65,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI chat endpoint
-  app.post("/api/chat", (req, res) => {
+  app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    const { message } = req.body;
+    const { message, conversationHistory = [] } = req.body;
     
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
     }
     
-    // In a real application, this would connect to an AI service
-    // For now, we'll return pre-defined responses based on keywords
-    let response = '';
-    
-    if (message.toLowerCase().includes('react') && message.toLowerCase().includes('hook')) {
-      response = `Here's how you can implement a React useEffect hook with cleanup:
-
-\`\`\`jsx
-useEffect(() => {
-  // Your effect code here
-  const subscription = someAPI.subscribe();
-
-  // Return a cleanup function
-  return () => {
-    subscription.unsubscribe();
-  };
-}, [dependency1, dependency2]);
-\`\`\`
-
-The cleanup function runs before the component unmounts or before the effect runs again due to dependency changes.`;
-    } 
-    else if (message.toLowerCase().includes('typescript') && (message.toLowerCase().includes('interface') || message.toLowerCase().includes('type'))) {
-      response = `In TypeScript, both interfaces and types can be used to define object shapes, but they have some differences:
-
-\`\`\`typescript
-// Interface
-interface User {
-  id: number;
-  name: string;
-  role?: string; // Optional property
-}
-
-// Type alias
-type User = {
-  id: number;
-  name: string;
-  role?: string;
-};
-\`\`\`
-
-Key differences:
-- Interfaces can be extended with the extends keyword
-- Types can use union and intersection operators
-- Interfaces can be merged when declared multiple times
-- Types can be used for primitives, unions, and tuples`;
-    } 
-    else {
-      response = `I understand you're asking about "${message}". Let me provide some guidance.
-
-This is a common topic in development. The best approach would typically involve:
-
-1. Understanding the core concepts first
-2. Following established patterns and best practices
-3. Testing thoroughly
-4. Optimizing for performance
-
-Would you like me to provide specific code examples or explain any particular aspect in more detail?`;
+    try {
+      // Convert the conversation history to the format expected by OpenAI
+      const messages: ChatMessage[] = [
+        // System message to set the AI's behavior
+        {
+          role: 'system',
+          content: 'You are AI Code Buddy, a helpful coding assistant. Provide clear, concise answers to programming questions. Include code examples when appropriate, and explain concepts in a way that\'s easy to understand. You specialize in software development, web technologies, databases, and DevOps.'
+        },
+        // Add conversation history
+        ...conversationHistory.map((msg: any) => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        })),
+        // Add the current message
+        {
+          role: 'user',
+          content: message
+        }
+      ];
+      
+      // Get response from OpenAI
+      const response = await getChatCompletion(messages);
+      
+      // Save the chat message to history in a real app
+      res.json({ 
+        response,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    } catch (error) {
+      console.error('Error in chat endpoint:', error);
+      res.status(500).json({ 
+        error: "Failed to get response from AI service",
+        timestamp: new Date().toLocaleTimeString()
+      });
     }
-    
-    // Save the chat message to history in a real app
-    
-    res.json({ 
-      response,
-      timestamp: new Date().toLocaleTimeString()
-    });
   });
 
   // Save AI response endpoint
