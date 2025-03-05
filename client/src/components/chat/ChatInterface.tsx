@@ -204,39 +204,76 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Process code blocks after rendering
+  // Process code blocks after rendering with improved loading of Prism languages
   useEffect(() => {
     const codeBlocks = document.querySelectorAll('.code-block');
-    codeBlocks.forEach(block => {
-      const language = block.getAttribute('data-language') || 'javascript';
-      const code = block.textContent || '';
-      
-      // Clear the block
-      while (block.firstChild) {
-        block.removeChild(block.firstChild);
-      }
-      
-      // Create a new pre and code element
-      const pre = document.createElement('pre');
-      pre.className = `language-${language}`;
-      const codeEl = document.createElement('code');
-      codeEl.className = `language-${language}`;
-      codeEl.textContent = code;
-      
-      pre.appendChild(codeEl);
-      block.appendChild(pre);
-      
-      // Import and apply Prism.js
-      import('prismjs').then(Prism => {
-        import('prismjs/components/prism-jsx').then(() => {
-          import('prismjs/components/prism-typescript').then(() => {
-            import('prismjs/components/prism-tsx').then(() => {
-              Prism.highlightElement(codeEl);
-            });
-          });
-        });
+    
+    if (codeBlocks.length === 0) return;
+    
+    // Function to process code blocks after Prism is loaded
+    const processCodeBlocks = (Prism: any) => {
+      codeBlocks.forEach(block => {
+        const language = block.getAttribute('data-language') || 'javascript';
+        const code = block.textContent || '';
+        
+        // Skip if already processed
+        if (block.querySelector('pre')) return;
+        
+        // Clear the block
+        while (block.firstChild) {
+          block.removeChild(block.firstChild);
+        }
+        
+        // Create new pre and code elements
+        const pre = document.createElement('pre');
+        pre.className = `language-${language}`;
+        const codeEl = document.createElement('code');
+        codeEl.className = `language-${language}`;
+        codeEl.textContent = code;
+        
+        pre.appendChild(codeEl);
+        block.appendChild(pre);
+        
+        // Highlight the code
+        try {
+          Prism.highlightElement(codeEl);
+        } catch (error) {
+          console.warn('Error highlighting code:', error);
+        }
       });
-    });
+    };
+    
+    // Load Prism and all needed language components once
+    const loadPrism = async () => {
+      try {
+        const Prism = await import('prismjs');
+        
+        // Load commonly used languages in parallel
+        await Promise.all([
+          import('prismjs/components/prism-javascript'),
+          import('prismjs/components/prism-jsx'),
+          import('prismjs/components/prism-typescript'),
+          import('prismjs/components/prism-tsx'),
+          import('prismjs/components/prism-css'),
+          import('prismjs/components/prism-python'),
+          import('prismjs/components/prism-java'),
+          import('prismjs/components/prism-csharp'),
+          import('prismjs/components/prism-json'),
+          import('prismjs/components/prism-bash'),
+          import('prismjs/components/prism-markdown'),
+          import('prismjs/components/prism-sql'),
+          import('prismjs/components/prism-php'),
+          import('prismjs/components/prism-ruby'),
+        ]);
+        
+        // Process all code blocks
+        processCodeBlocks(Prism.default);
+      } catch (error) {
+        console.error('Error loading Prism or languages:', error);
+      }
+    };
+    
+    loadPrism();
   }, [messages]);
 
   return (
