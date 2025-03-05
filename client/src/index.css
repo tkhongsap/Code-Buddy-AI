@@ -152,6 +152,66 @@ pre, code {
   background: #525252;
 }
 
+/* AI Chat Formatting */
+.ai-formatted-message p {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.ai-formatted-message h1,
+.ai-formatted-message h2, 
+.ai-formatted-message h3,
+.ai-formatted-message h4,
+.ai-formatted-message h5,
+.ai-formatted-message h6 {
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-formatted-message h1 { font-size: 1.5rem; }
+.ai-formatted-message h2 { font-size: 1.25rem; }
+.ai-formatted-message h3 { font-size: 1.125rem; }
+.ai-formatted-message h4 { font-size: 1rem; }
+
+.ai-formatted-message ul.ai-list,
+.ai-formatted-message ol.ai-list {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.ai-formatted-message ul.ai-list {
+  list-style-type: disc;
+}
+
+.ai-formatted-message ol.ai-list {
+  list-style-type: decimal;
+}
+
+.ai-formatted-message li {
+  margin-bottom: 0.5rem;
+}
+
+.ai-formatted-message code.inline-code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.9em;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  padding: 0.2em 0.4em;
+}
+
+.dark .ai-formatted-message code.inline-code {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.ai-formatted-message strong {
+  font-weight: 600;
+}
+
+.ai-formatted-message em {
+  font-style: italic;
+}
+
 @layer base {
   * {
     @apply border-border;

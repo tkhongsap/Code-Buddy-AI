@@ -51,6 +51,41 @@ export default function ChatInterface() {
     },
   });
 
+  // Format AI response text
+  const formatAIResponse = (text: string): string => {
+    return text
+      // Format code blocks with language specification
+      .replace(/```(.+?)\n([\s\S]*?)```/g, (_, language, code) => {
+        // Trim potential empty line at start and end of code block
+        const trimmedCode = code.trim();
+        return `<div class="code-block" data-language="${language.trim()}">${trimmedCode}</div>`;
+      })
+      // Format inline code
+      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+      // Format headers (# Header)
+      .replace(/^(#{1,6})\s+(.+)$/gm, (_, hashes, content) => {
+        const level = hashes.length;
+        return `<h${level} class="ai-heading">${content}</h${level}>`;
+      })
+      // Format unordered lists
+      .replace(/^(\s*)-\s+(.+)$/gm, '<ul class="ai-list"><li>$2</li></ul>')
+      // Format ordered lists
+      .replace(/^(\s*)\d+\.\s+(.+)$/gm, '<ol class="ai-list"><li>$2</li></ol>')
+      // Format bold text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Format italic text
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Format paragraphs (lines with content)
+      .replace(/^(.+)$/gm, (match) => {
+        // Don't wrap lines that are already HTML tags
+        if (match.startsWith('<') && match.endsWith('>')) return match;
+        return `<p>${match}</p>`;
+      })
+      // Clean up any double-wrapped paragraphs
+      .replace(/<p><(h\d|ul|ol|div|pre|code)>/g, '<$1>')
+      .replace(/<\/(h\d|ul|ol|div|pre|code)><\/p>/g, '</$1>');
+  };
+
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { message: string; conversationHistory: Message[] }) => {
@@ -71,9 +106,7 @@ export default function ChatInterface() {
           sender: 'ai',
           content: response,
           timestamp: new Date().toLocaleTimeString(),
-          html: response.replace(/```(.+?)\n([\s\S]*?)```/g, (_: string, language: string, code: string) => {
-            return `<div class="code-block" data-language="${language}">${code}</div>`;
-          })
+          html: formatAIResponse(response)
         }
       ]);
       setIsTyping(false);
@@ -268,20 +301,11 @@ export default function ChatInterface() {
                         : 'bg-card'
                     } shadow-sm relative group`}
                   >
-                    {message.html ? (
-                      <div className="chat-message" dangerouslySetInnerHTML={{ __html: message.html }} />
+                    {message.sender === 'ai' && message.html ? (
+                      <div className="chat-message ai-formatted-message" dangerouslySetInnerHTML={{ __html: message.html }} />
                     ) : (
                       <div className="chat-message whitespace-pre-wrap">
-                        {message.content.split('```').map((part, i) => {
-                          if (i % 2 === 0) {
-                            return <span key={i}>{part}</span>;
-                          } else {
-                            const lines = part.split('\n');
-                            const language = lines[0];
-                            const code = lines.slice(1).join('\n');
-                            return <CodeBlock key={i} language={language} code={code} />;
-                          }
-                        })}
+                        {message.content}
                       </div>
                     )}
                     <div className="text-xs mt-2 opacity-70">{message.timestamp}</div>
