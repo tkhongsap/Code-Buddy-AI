@@ -51,8 +51,8 @@ export default function Landing() {
             <div className="mt-16 max-w-5xl mx-auto p-2 md:p-8 bg-card rounded-xl shadow-xl">
               <div className="rounded-lg overflow-hidden border border-border">
                 <img 
-                  src="https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070&auto=format&fit=crop" 
-                  alt="AI Code Buddy in action" 
+                  src="https://images.unsplash.com/photo-1586672806791-3a67d24186c0?q=80&w=2070&auto=format&fit=crop" 
+                  alt="Asian developers using AI Code Buddy" 
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -155,8 +155,8 @@ export default function Landing() {
                 </div>
                 <div className="rounded-xl overflow-hidden shadow-xl">
                   <img 
-                    src="https://images.unsplash.com/photo-1573495627361-d9b87960b12d?q=80&w=2069&auto=format&fit=crop" 
-                    alt="Developer using AI Code Buddy" 
+                    src="https://images.unsplash.com/photo-1596496181871-9681eacf9764?q=80&w=2069&auto=format&fit=crop" 
+                    alt="Asian developer using AI Code Buddy" 
                     className="w-full h-auto"
                   />
                 </div>
@@ -167,8 +167,8 @@ export default function Landing() {
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div className="order-2 md:order-1 rounded-xl overflow-hidden shadow-xl">
                   <img 
-                    src="https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070&auto=format&fit=crop" 
-                    alt="Learning progress dashboard" 
+                    src="https://images.unsplash.com/photo-1580894732444-8ecded7900cd?q=80&w=2070&auto=format&fit=crop" 
+                    alt="Asian developer tracking learning progress" 
                     className="w-full h-auto"
                   />
                 </div>
@@ -237,13 +237,13 @@ export default function Landing() {
                 <div className="flex items-center">
                   <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mr-4">
                     <img 
-                      src="https://randomuser.me/api/portraits/women/45.jpg" 
-                      alt="Sarah T." 
+                      src="https://randomuser.me/api/portraits/women/79.jpg" 
+                      alt="Mei L." 
                       className="h-full w-full object-cover"
                     />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Sarah T.</h4>
+                    <h4 className="font-semibold">Mei L.</h4>
                     <p className="text-sm text-muted-foreground">Senior Frontend Developer</p>
                   </div>
                 </div>
@@ -266,13 +266,13 @@ export default function Landing() {
                 <div className="flex items-center">
                   <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mr-4">
                     <img 
-                      src="https://randomuser.me/api/portraits/men/32.jpg" 
-                      alt="Michael K." 
+                      src="https://randomuser.me/api/portraits/men/56.jpg" 
+                      alt="Jin T." 
                       className="h-full w-full object-cover"
                     />
                   </div>
                   <div>
-                    <h4 className="font-semibold">Michael K.</h4>
+                    <h4 className="font-semibold">Jin T.</h4>
                     <p className="text-sm text-muted-foreground">CS Student</p>
                   </div>
                 </div>
