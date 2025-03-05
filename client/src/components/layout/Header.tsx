@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,9 +16,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
+import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 
 export default function Header() {
-  const [, navigate] = useLocation();
+  const navigate = useSafeNavigation();
   const { user, logoutMutation } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -173,7 +173,7 @@ export default function Header() {
                   <Button variant="ghost" className="p-0 relative h-10 w-10 rounded-md hover:bg-transparent focus:bg-transparent">
                     <Avatar className="user-avatar border transition-colors">
                       <AvatarFallback className="text-base">
-                        {user?.displayName?.charAt(0).toUpperCase() || 'U'}
+                        {user?.username.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -237,7 +237,7 @@ export default function Header() {
                 <Button variant="ghost" className="p-0 relative h-8 w-8 rounded-md hover:bg-transparent focus:bg-transparent">
                   <Avatar className="user-avatar border transition-colors">
                     <AvatarFallback className="text-base">
-                      {user?.displayName?.charAt(0).toUpperCase() || 'U'}
+                      {user?.username.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>

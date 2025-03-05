@@ -13,26 +13,23 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/simple-chat" component={SimpleChat} />
-      <ProtectedRoute path="/dashboard" component={Dashboard} />
-      <ProtectedRoute path="/chat" component={ChatInterface} />
-      <ProtectedRoute path="/learning" component={LearningProgress} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
+// The Routes component is now defined inside the App component
+// This ensures all context providers are available to routes
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Router />
+          {/* Routes defined inside providers to ensure contexts are available */}
+          <Switch>
+            <Route path="/" component={Landing} />
+            <Route path="/auth" component={AuthPage} />
+            <Route path="/simple-chat" component={SimpleChat} />
+            <ProtectedRoute path="/dashboard" component={Dashboard} />
+            <ProtectedRoute path="/chat" component={ChatInterface} />
+            <ProtectedRoute path="/learning" component={LearningProgress} />
+            <Route component={NotFound} />
+          </Switch>
           <Toaster />
         </AuthProvider>
       </QueryClientProvider>
