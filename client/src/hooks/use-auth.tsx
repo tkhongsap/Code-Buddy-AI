@@ -47,8 +47,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
+  // Create a dedicated demo login mutation
+  const demoLoginMutation = useMutation({
+    mutationFn: async () => {
+      console.log("Attempting demo login");
+      const res = await apiRequest("POST", "/api/demo-login");
+      return await res.json();
+    },
+    onSuccess: (user: SelectUser) => {
+      console.log("Demo login successful");
+      queryClient.setQueryData(["/api/user"], user);
+    },
+    onError: (error: Error) => {
+      console.error("Demo login error:", error);
+      toast({
+        title: "Demo login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Regular login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
+      // Special case for demo user
+      if (credentials.username === "demo" && credentials.password === "1234") {
+        console.log("Redirecting to demo login");
+        return demoLoginMutation.mutateAsync();
+      }
+      
+      // Regular login flow
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },

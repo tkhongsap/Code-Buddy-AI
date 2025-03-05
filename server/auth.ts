@@ -7,6 +7,15 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
+// Extend session with our custom properties
+declare module "express-session" {
+  interface SessionData {
+    userId: number;
+    username: string;
+    isAuthenticated: boolean;
+  }
+}
+
 declare global {
   namespace Express {
     interface User extends SelectUser {}
@@ -116,6 +125,42 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // Special endpoint for demo login - bypasses normal authentication
+  app.post("/api/demo-login", async (req, res) => {
+    console.log("Demo login attempt");
+    try {
+      // Get or create demo user
+      let demoUser = await storage.getUserByUsername("demo");
+      if (!demoUser) {
+        console.log("Creating demo user");
+        const hashedPassword = await hashPassword("1234");
+        demoUser = await storage.createUser({
+          username: "demo",
+          password: hashedPassword
+        });
+      }
+      
+      // Create a session manually
+      req.session.userId = demoUser.id;
+      req.session.username = demoUser.username;
+      req.session.isAuthenticated = true;
+      
+      // Save session and return user info
+      req.session.save(err => {
+        if (err) {
+          console.error("Failed to save session:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        console.log("Demo login successful, session ID:", req.sessionID);
+        return res.status(200).json(demoUser);
+      });
+    } catch (error) {
+      console.error("Demo login error:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Regular login endpoint
   app.post("/api/login", (req, res, next) => {
     console.log("Login attempt for user:", req.body.username);
     
@@ -150,19 +195,45 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     console.log("GET /api/user - Session ID:", req.sessionID);
-    console.log("User authenticated:", req.isAuthenticated());
+    
+    // Check both passport authentication and session-based authentication
+    const isPassportAuth = req.isAuthenticated();
+    const isSessionAuth = req.session.isAuthenticated === true;
+    
+    console.log("Passport authenticated:", isPassportAuth);
+    console.log("Session authenticated:", isSessionAuth);
+    
     if (req.user) {
-      console.log("User in session:", req.user.username);
+      console.log("User in passport session:", req.user.username);
+    } else if (req.session.userId) {
+      console.log("User ID in custom session:", req.session.userId);
     } else {
-      console.log("No user in session");
+      console.log("No user in any session");
     }
     
-    if (!req.isAuthenticated()) {
+    // User can be authenticated either through passport or custom session
+    if (isPassportAuth) {
+      // Standard Passport.js authentication
+      return res.json(req.user);
+    } else if (isSessionAuth && req.session.userId) {
+      // Custom session-based authentication for test mode
+      try {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          return res.json(user);
+        } else {
+          console.log("User not found for ID in session:", req.session.userId);
+          return res.sendStatus(401);
+        }
+      } catch (error) {
+        console.error("Error fetching user from custom session:", error);
+        return res.sendStatus(500);
+      }
+    } else {
+      // Not authenticated through any method
       return res.sendStatus(401);
     }
-    
-    res.json(req.user);
   });
 }
