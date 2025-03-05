@@ -18,18 +18,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).id;
       
-      // Get actual count of chat messages from the database
-      const { db } = storage as any;
-      const messagesCountResult = await db.query(
-        'SELECT COUNT(*) as total FROM chat_messages WHERE user_id = $1',
-        [userId]
-      );
-      const totalQueries = parseInt(messagesCountResult.rows[0].total);
+      // First, try to get the user's sessions
+      const sessions = await storage.getUserChatSessions(userId);
+      let totalQueriesCount = 0;
+      
+      // For each session, get the messages and count them
+      for (const session of sessions) {
+        const messages = await storage.getChatMessages(session.id);
+        // Only count user messages, not AI responses
+        const userMessages = messages.filter(msg => msg.sender === 'user');
+        totalQueriesCount += userMessages.length;
+      }
+      
+      console.log(`Found ${totalQueriesCount} total queries for user ${userId}`);
       
       // For now, we'll keep using mock data for other stats
       const dashboardData = {
         stats: {
-          totalQueries: totalQueries, // Real data from database
+          totalQueries: totalQueriesCount, // Real data from database
           savedSolutions: 47,  // Still mock data
         },
         weeklyActivity: {
@@ -61,12 +67,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: "2d ago",
             tags: ["CSS", "Layout"],
           },
-        ],
-        learningProgress: [
-          { id: 1, skill: "React", progress: 85, color: "#61DAFB" },
-          { id: 2, skill: "TypeScript", progress: 72, color: "#3178C6" },
-          { id: 3, skill: "Node.js", progress: 64, color: "#339933" },
-          { id: 4, skill: "PostgreSQL", progress: 58, color: "#336791" },
         ],
       };
 
