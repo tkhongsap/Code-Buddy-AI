@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI from "openai";
 
 // Initialize the OpenAI client
 // Note: This uses the environment variable OPENAI_API_KEY
@@ -7,7 +7,7 @@ const openai = new OpenAI({
 });
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -16,21 +16,26 @@ export interface ChatMessage {
  * @param messages Array of chat messages
  * @returns The AI's response
  */
-export async function getChatCompletion(messages: ChatMessage[]): Promise<string> {
+export async function getChatCompletion(
+  messages: ChatMessage[],
+): Promise<string> {
   try {
-    console.log('Using OpenAI API key:', process.env.OPENAI_API_KEY ? 'Key is set' : 'Key is not set');
-    
+    console.log(
+      "Using OpenAI API key:",
+      process.env.OPENAI_API_KEY ? "Key is set" : "Key is not set",
+    );
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // You can change this to gpt-4 or other models
+      model: "gpt-4o-mini", // You can change this to gpt-4 or other models
       messages,
       temperature: 0.7,
       max_tokens: 1000,
     });
 
-    return completion.choices[0]?.message?.content || 'No response generated.';
+    return completion.choices[0]?.message?.content || "No response generated.";
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    throw new Error('Failed to get response from AI service');
+    console.error("Error calling OpenAI API:", error);
+    throw new Error("Failed to get response from AI service");
   }
 }
 
