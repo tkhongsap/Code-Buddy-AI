@@ -12,6 +12,7 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   const { theme } = useTheme();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Normalize language name for Prism
   const normalizeLanguage = (lang: string): string => {
@@ -72,81 +73,110 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
       
       loadPrism();
     }
+
+    // Clean up any pending timeouts when component unmounts
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
   }, [code, normalizedLang, theme]);
 
-  const handleCopy = () => {
+  const copyToClipboard = () => {
+    // Multiple methods to ensure cross-browser compatibility
+    
+    // Method 1: Using clipboard API directly (modern browsers)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(code)
+        .then(() => {
+          setCopied(true);
+          showCopySuccess();
+        })
+        .catch(e => {
+          console.error("Clipboard API failed:", e);
+          fallbackCopyMethod();
+        });
+    } else {
+      // Method 2: Fallback for browsers without clipboard API
+      fallbackCopyMethod();
+    }
+  };
+
+  const fallbackCopyMethod = () => {
     try {
-      // Create a temporary textarea element to copy text
+      // Create a temporary textarea element
       const textArea = document.createElement("textarea");
-      textArea.value = code;
       
-      // Make the textarea out of viewport
+      // Set its content and style
+      textArea.value = code;
       textArea.style.position = "fixed";
-      textArea.style.left = "-999999px";
-      textArea.style.top = "-999999px";
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.width = "2em";
+      textArea.style.height = "2em";
+      textArea.style.padding = "0";
+      textArea.style.border = "none";
+      textArea.style.outline = "none";
+      textArea.style.boxShadow = "none";
+      textArea.style.background = "transparent";
+      textArea.style.opacity = "0";
+      
       document.body.appendChild(textArea);
       
       // Select and copy the text
-      textArea.focus();
       textArea.select();
-      const successful = document.execCommand('copy');
+      textArea.setSelectionRange(0, code.length); // For mobile devices
+      
+      const successful = document.execCommand("copy");
       
       // Clean up
       document.body.removeChild(textArea);
       
       if (successful) {
         setCopied(true);
-        toast({
-          title: "Copied!",
-          description: "Code copied to clipboard",
-          duration: 2000,
-        });
+        showCopySuccess();
       } else {
-        throw new Error("Copy command was unsuccessful");
+        showCopyError("Copy operation failed");
       }
-      
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
     } catch (err) {
-      console.error('Failed to copy: ', err);
-      
-      // Fallback to the modern API if available
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(code)
-          .then(() => {
-            setCopied(true);
-            toast({
-              title: "Copied!",
-              description: "Code copied to clipboard",
-              duration: 2000,
-            });
-            
-            setTimeout(() => {
-              setCopied(false);
-            }, 2000);
-          })
-          .catch(() => {
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Failed to copy code",
-              duration: 2000,
-            });
-          });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Clipboard functionality not available in your browser",
-          duration: 2000,
-        });
-      }
+      console.error("Fallback copy method failed:", err);
+      showCopyError("Unable to copy code");
     }
   };
 
+  const showCopySuccess = () => {
+    toast({
+      title: "Copied!",
+      description: "Code copied to clipboard successfully",
+      duration: 2000,
+    });
+    
+    // Set timeout to reset copied state
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  const showCopyError = (message: string) => {
+    toast({
+      variant: "destructive",
+      title: "Copy failed",
+      description: message,
+      duration: 3000,
+    });
+    
+    setCopied(false);
+  };
+
   return (
-    <div className="my-4 rounded-md overflow-hidden border shadow-md" style={{ borderColor: 'var(--tab-border)' }}>
+    <div className="my-4 rounded-md overflow-hidden border shadow-md relative" 
+         style={{ borderColor: 'var(--tab-border)' }}>
+      
+      {/* Header bar with language name */}
       <div className="flex items-center justify-between px-4 py-2 text-xs border-b" 
         style={{ 
           background: 'var(--sidebar-bg)', 
@@ -161,10 +191,15 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           </span>
           <span className="font-semibold text-xs" style={{ color: 'var(--syntax-constant)' }}>{language}</span>
         </div>
+        
+        {/* Copy button - more prominent */}
         <button
-          className={`transition-all px-2 py-1 rounded flex items-center gap-1 ${copied ? 'bg-green-500/10 text-green-500' : 'hover:bg-gray-500/10'}`}
-          style={{ color: copied ? 'var(--green)' : 'var(--line-number)' }}
-          onClick={handleCopy}
+          className={`transition-all px-2 py-1 rounded-md flex items-center gap-1 ${
+            copied 
+              ? 'bg-green-600 text-white' 
+              : 'bg-gray-700/60 text-gray-100 hover:bg-gray-600'
+          }`}
+          onClick={copyToClipboard}
           title="Copy to clipboard"
           aria-label="Copy code"
         >
@@ -183,7 +218,7 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
               >
                 <path d="M20 6L9 17l-5-5"></path>
               </svg>
-              <span className="text-xs">Copied</span>
+              <span className="text-xs font-medium">Copied!</span>
             </>
           ) : (
             <>
@@ -201,20 +236,55 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
-              <span className="text-xs">Copy</span>
+              <span className="text-xs font-medium">Copy</span>
             </>
           )}
         </button>
       </div>
-      <pre className={`language-${normalizedLang} text-sm p-4 overflow-x-auto font-mono leading-relaxed`} 
-        style={{ 
-          background: 'var(--editor-bg)',
-          color: 'var(--code-fg)',
-        }}>
-        <code ref={codeRef} className={`language-${normalizedLang}`}>
-          {code}
-        </code>
-      </pre>
+      
+      {/* Code content */}
+      <div className="relative group">
+        <pre className={`language-${normalizedLang} text-sm p-4 overflow-x-auto font-mono leading-relaxed`} 
+          style={{ 
+            background: 'var(--editor-bg)',
+            color: 'var(--code-fg)',
+          }}>
+          <code ref={codeRef} className={`language-${normalizedLang}`}>
+            {code}
+          </code>
+        </pre>
+        
+        {/* Floating copy button that appears on hover for quick access */}
+        <button
+          onClick={copyToClipboard}
+          className="absolute top-2 right-2 bg-gray-700/80 hover:bg-gray-600 rounded-md p-2 text-white shadow-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity focus:opacity-100"
+          style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+          }}
+          title="Copy code"
+          aria-label="Copy code to clipboard"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+      
+      {/* Footer */}
       <div className="px-4 py-1 text-xs border-t flex justify-between" 
         style={{ 
           background: 'var(--editor-bg)',
