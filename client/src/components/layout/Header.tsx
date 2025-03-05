@@ -16,24 +16,34 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
+import type { Theme } from "@/hooks/use-theme";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 
 export default function Header() {
   const navigate = useSafeNavigation();
-  const { theme, setTheme } = useTheme();
   
-  // Safely access auth context - it might not be available on all pages
-  let user = null;
-  let logoutMutation = { mutateAsync: async () => {} };
+  // Initialize with default values
+  let theme: "light" | "dark" | "system" = "light";
+  let setTheme: (t: "light" | "dark" | "system") => void = () => {};
+  let user: any = null;
+  let logoutMutation = { mutateAsync: async () => {}, isPending: false };
   
+  // Safely access theme context
   try {
-    // Attempt to use auth context if available
+    const themeContext = useTheme();
+    theme = themeContext.theme;
+    setTheme = themeContext.setTheme;
+  } catch (e) {
+    console.log("Theme context not available");
+  }
+  
+  // Safely access auth context
+  try {
     const authContext = useAuth();
     user = authContext.user;
     logoutMutation = authContext.logoutMutation;
   } catch (e) {
-    // Auth context not available - this is fine on public pages
-    console.log("Auth context not available on this page");
+    console.log("Auth context not available");
   }
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
