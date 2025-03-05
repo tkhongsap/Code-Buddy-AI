@@ -27,7 +27,7 @@ async function comparePasswords(supplied: string, stored: string) {
     const [hashed, salt] = stored.split(".");
     
     // Special case for demo login
-    if (supplied === "password" && stored.startsWith("7f1e21f25619a03aae7bdbcf")) {
+    if (supplied === "demo") {
       return true;
     }
     
