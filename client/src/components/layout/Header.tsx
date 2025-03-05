@@ -6,13 +6,22 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function Header() {
   const [, navigate] = useLocation();
   const { user, logoutMutation } = useAuth();
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentPath, setCurrentPath] = useState("");
 
@@ -70,135 +79,203 @@ export default function Header() {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          {!user ? (
-            <>
-              <Button 
-                variant="ghost" 
-                onClick={scrollToFeatures}
-                className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-              >
-                Features
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-              >
-                Pricing
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-              >
-                Docs
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate("/auth")} 
-                className="text-primary hover:text-primary hover:bg-transparent"
-              >
-                Log in
-              </Button>
-              <Button onClick={() => navigate("/auth")}>
-                Get Started
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleNavigation("/dashboard")}
-                className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/dashboard" ? "text-primary font-medium" : ""}`}
-              >
-                Dashboard
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleNavigation("/chat")}
-                className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/chat" ? "text-primary font-medium" : ""}`}
-              >
-                AI Chat
-              </Button>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleNavigation("/learning")}
-                className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
-              >
-                Learning
-              </Button>
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-                  <span className="text-sm font-medium">
-                    {user.username.substring(0, 2).toUpperCase()}
-                  </span>
-                </div>
-                <div className="text-sm font-medium">{user.username}</div>
+        <div className="hidden md:flex items-center justify-between w-full ml-8">
+          <nav className="flex items-center space-x-6">
+            {!user ? (
+              <>
                 <Button 
                   variant="ghost" 
-                  size="icon" 
-                  onClick={handleLogout} 
-                  className="text-muted-foreground hover:text-destructive"
+                  onClick={scrollToFeatures}
+                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                  </svg>
+                  Features
                 </Button>
-              </div>
-            </>
-          )}
-
-          {/* Theme Toggle */}
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-lg"
-          >
-            {theme === "dark" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
+                <Button 
+                  variant="ghost" 
+                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
+                >
+                  Pricing
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
+                >
+                  Docs
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate("/auth")} 
+                  className="text-primary hover:text-primary hover:bg-transparent"
+                >
+                  Log in
+                </Button>
+                <Button onClick={() => navigate("/auth")}>
+                  Get Started
+                </Button>
+              </>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
+              <>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleNavigation("/dashboard")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/dashboard" ? "text-primary font-medium" : ""}`}
+                >
+                  Dashboard
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleNavigation("/chat")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/chat" ? "text-primary font-medium" : ""}`}
+                >
+                  AI Chat
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleNavigation("/learning")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
+                >
+                  Learning
+                </Button>
+              </>
             )}
-          </Button>
-        </nav>
+          </nav>
+          
+          <div className="flex items-center space-x-3">
+            {/* Theme Toggle */}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="rounded-lg"
+            >
+              {theme === "dark" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              )}
+            </Button>
+            
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="p-1 relative">
+                    <Avatar className="h-9 w-9 bg-primary">
+                      <AvatarFallback className="text-white">
+                        {user.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex items-center gap-2 py-2">
+                    <Avatar className="h-8 w-8 bg-primary">
+                      <AvatarFallback className="text-white text-sm">
+                        {user.username.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span>{user.username}</span>
+                      <span className="text-xs text-muted-foreground truncate">User</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleNavigation("/dashboard")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="7" height="9" x="3" y="3" rx="1" />
+                      <rect width="7" height="5" x="14" y="3" rx="1" />
+                      <rect width="7" height="9" x="14" y="12" rx="1" />
+                      <rect width="7" height="5" x="3" y="16" rx="1" />
+                    </svg>
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavigation("/profile")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavigation("/settings")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
 
         {/* Mobile Menu */}
         <div className="flex items-center md:hidden gap-2">
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="p-1 relative">
+                  <Avatar className="h-8 w-8 bg-primary">
+                    <AvatarFallback className="text-white">
+                      {user.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="flex items-center gap-2 py-2">
+                  <div className="flex flex-col">
+                    <span>{user.username}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system")}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="px-2"
           >
-            {theme === "light" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-600">
+            {theme === "dark" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
                 <circle cx="12" cy="12" r="5"></circle>
                 <line x1="12" y1="1" x2="12" y2="3"></line>
                 <line x1="12" y1="21" x2="12" y2="23"></line>
               </svg>
-            ) : theme === "dark" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
             )}
           </Button>
@@ -238,33 +315,6 @@ export default function Header() {
                       Docs
                     </Button>
                     <div className="border-t pt-4 space-y-3">
-                      <div className="flex gap-2 items-center mb-3">
-                        <span className="text-sm text-muted-foreground">Theme:</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("light")}
-                          className={`px-3 text-xs ${theme === "light" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          Light
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("dark")}
-                          className={`px-3 text-xs ${theme === "dark" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          Dark
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("system")}
-                          className={`px-3 text-xs ${theme === "system" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          System
-                        </Button>
-                      </div>
                       <Button 
                         onClick={() => navigate("/auth")} 
                         variant="outline" 
@@ -303,58 +353,20 @@ export default function Header() {
                     >
                       Learning
                     </Button>
-                    <div className="border-t pt-4 space-y-4">
-                      <div className="flex gap-2 items-center mb-3">
-                        <span className="text-sm text-muted-foreground">Theme:</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("light")}
-                          className={`px-3 text-xs ${theme === "light" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          Light
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("dark")}
-                          className={`px-3 text-xs ${theme === "dark" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          Dark
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setTheme("system")}
-                          className={`px-3 text-xs ${theme === "system" ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-                        >
-                          System
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center justify-between border-t pt-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-                            <span className="text-sm font-medium">
-                              {user.username.substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="text-sm font-medium">{user.username}</div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          onClick={handleLogout} 
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                          </svg>
-                          Sign out
-                        </Button>
-                      </div>
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleNavigation("/profile")}
+                      className="justify-start"
+                    >
+                      Profile
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleNavigation("/settings")}
+                      className="justify-start"
+                    >
+                      Settings
+                    </Button>
                   </>
                 )}
               </div>
