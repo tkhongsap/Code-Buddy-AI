@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent } from "react";
+import { FormEvent, KeyboardEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -15,6 +15,18 @@ export default function MessageInput({
   sendMessage, 
   isTyping 
 }: MessageInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-adjust height of textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to avoid constant growth
+      textareaRef.current.style.height = 'auto';
+      // Set the height to the scroll height
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [newMessage]);
+
   // Handle key press events
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // If Enter is pressed without Shift, submit the form
@@ -23,6 +35,27 @@ export default function MessageInput({
       if (newMessage.trim() !== '') {
         sendMessage();
       }
+    }
+    // If Enter is pressed WITH Shift, add a new line
+    else if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      const cursorPosition = e.currentTarget.selectionStart;
+      const cursorEnd = e.currentTarget.selectionEnd;
+      
+      // Insert a newline at cursor position
+      const textBefore = newMessage.substring(0, cursorPosition);
+      const textAfter = newMessage.substring(cursorEnd);
+      const newText = textBefore + '\n' + textAfter;
+      
+      setNewMessage(newText);
+      
+      // Set cursor position after the inserted newline
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = cursorPosition + 1;
+          textareaRef.current.selectionEnd = cursorPosition + 1;
+        }
+      }, 0);
     }
   };
 
@@ -33,18 +66,19 @@ export default function MessageInput({
         sendMessage();
       }} className="flex items-start space-x-2">
         <Textarea
+          ref={textareaRef}
           value={newMessage} 
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={handleKeyPress}
           placeholder="Ask a coding question... (Shift+Enter for new line)" 
-          className="flex-1 min-h-[60px] resize-none py-3"
+          className="flex-1 min-h-[60px] resize-none py-3 whitespace-pre-wrap"
           disabled={isTyping}
           rows={1}
         />
         <Button 
           type="submit" 
           size="icon" 
-          className="h-10 w-10" 
+          className="h-10 w-10 self-start mt-1" 
           disabled={isTyping || newMessage.trim() === ''}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
