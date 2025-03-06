@@ -231,7 +231,11 @@ export default function ChatInterface() {
       }
       
       // Create a placeholder message for the streaming response
+      // Make sure this AI message has a completely new ID that won't conflict
+      // with the user message that was just added
       const newMessageId = messages.length + 1;
+      
+      // Add this placeholder message for AI response
       setMessages(prev => [
         ...prev,
         {
@@ -246,10 +250,11 @@ export default function ChatInterface() {
       // Reset streaming response
       setStreamingResponse('');
       
-      // Create POST request body
+      // Create POST request body - explicitly filtering out the message we just added
+      // and only sending prior messages as conversation history
       const requestBody = JSON.stringify({
         message: userQuestion,
-        conversationHistory,
+        conversationHistory: conversationHistory,
         sessionId: currentSessionId
       });
       
