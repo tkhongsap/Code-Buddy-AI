@@ -24,8 +24,28 @@ export default function Dashboard() {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
 
+  // Define a more specific type for our dashboard data
+  interface DashboardData {
+    stats: {
+      totalQueries: number;
+      savedSolutions: number;
+    };
+    weeklyActivity: {
+      labels: string[];
+      data: number[];
+    };
+    recentQueries: {
+      id: number;
+      query: string;
+      fullContent?: string;
+      timestamp: string;
+      tags: string[];
+      sessionId: number;
+    }[];
+  }
+
   // Fetch dashboard data from the API
-  const { data: dashboardData, isLoading } = useQuery<typeof mockDashboardData>({
+  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
     // No need to provide queryFn, the default fetcher will use the queryKey as URL
   });
