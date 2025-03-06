@@ -126,8 +126,23 @@ export default function Dashboard() {
     }
   };
 
+  // Interface for developer tips
+  interface DeveloperTip {
+    id: number;
+    title: string;
+    description: string;
+    iconType: string;
+    actionType: string;
+    isNew: boolean;
+  }
+
+  interface DeveloperTipsData {
+    tips: DeveloperTip[];
+    error?: string;
+  }
+
   // Fetch dashboard data from the API
-  const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
+  const { data: dashboardData, isLoading: isDashboardLoading, error: dashboardError } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
     queryFn: async () => {
       try {
@@ -143,16 +158,34 @@ export default function Dashboard() {
       }
     }
   });
+  
+  // Fetch developer tips from the API
+  const { data: developerTipsData, isLoading: isTipsLoading, error: tipsError, refetch: refetchTips } = useQuery<DeveloperTipsData>({
+    queryKey: ["/api/developer-tips"],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/developer-tips');
+        if (!response.ok) {
+          console.error('Developer tips API error:', response.status, response.statusText);
+          throw new Error(`Developer tips API error: ${response.status}`);
+        }
+        return await response.json();
+      } catch (err) {
+        console.error('Developer tips fetch error:', err);
+        throw err;
+      }
+    }
+  });
 
   // Add debug logging
   useEffect(() => {
     if (dashboardData) {
       console.log('Dashboard data loaded:', dashboardData);
     }
-    if (error) {
-      console.error('Dashboard query error:', error);
+    if (dashboardError) {
+      console.error('Dashboard query error:', dashboardError);
     }
-  }, [dashboardData, error]);
+  }, [dashboardData, dashboardError]);
 
   // No chart to initialize since we removed the Weekly Activity chart
   useEffect(() => {
@@ -233,7 +266,17 @@ export default function Dashboard() {
     }
   }, [dashboardData, expandedQueries]);
 
-  if (isLoading) {
+  // Debug logging for developer tips
+  useEffect(() => {
+    if (developerTipsData) {
+      console.log('Developer tips data loaded:', developerTipsData);
+    }
+    if (tipsError) {
+      console.error('Developer tips query error:', tipsError);
+    }
+  }, [developerTipsData, tipsError]);
+
+  if (isDashboardLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -644,78 +687,173 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Recommended Learning */}
+          {/* Personalized Developer Tips */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Recommended Next Steps</h2>
-                <Button variant="outline" size="sm" className="text-sm px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-0">
-                  Refresh
+                <h2 className="text-lg font-semibold">Personalized Developer Tips</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-sm px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-0"
+                  onClick={() => refetchTips()}
+                  disabled={isTipsLoading}
+                >
+                  {isTipsLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                        <path d="M21 2v6h-6"></path>
+                        <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                        <path d="M3 22v-6h6"></path>
+                        <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                      </svg>
+                      Refresh
+                    </>
+                  )}
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Recommendation 1 */}
-                <div className="border border-border rounded-lg p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                      </svg>
-                    </div>
-                    <h3 className="font-medium">React Advanced Patterns</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Complete this course to master advanced React techniques like custom hooks and render props.
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">25% completed</span>
-                    <Button variant="link" size="sm" className="text-primary p-0">Continue</Button>
-                  </div>
+              
+              {isTipsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                 </div>
-
-                {/* Recommendation 2 */}
-                <div className="border border-border rounded-lg p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m18 16 4-4-4-4"></path>
-                        <path d="m6 8-4 4 4 4"></path>
-                        <path d="m14.5 4-5 16"></path>
-                      </svg>
-                    </div>
-                    <h3 className="font-medium">TypeScript Generics</h3>
+              ) : tipsError ? (
+                <div className="text-center py-8">
+                  <div className="text-red-500 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p>Failed to load developer tips</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Practice with advanced TypeScript generics to improve your type safety in complex applications.
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">New recommendation</span>
-                    <Button variant="link" size="sm" className="text-primary p-0">Start</Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => refetchTips()}
+                    className="bg-primary/10 hover:bg-primary/20 border-primary/20"
+                  >
+                    Try Again
+                  </Button>
                 </div>
-
-                {/* Recommendation 3 */}
-                <div className="border border-border rounded-lg p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-                        <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
-                      </svg>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {developerTipsData?.tips.map((tip) => (
+                    <div key={tip.id} className="border border-border rounded-lg p-4">
+                      <div className="flex items-center mb-3">
+                        {/* Dynamic icon based on tip type */}
+                        <div className={`h-8 w-8 rounded flex items-center justify-center mr-3
+                          ${tip.iconType === 'code' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                           tip.iconType === 'book-open' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
+                           tip.iconType === 'database' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' :
+                           tip.iconType === 'server' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                           tip.iconType === 'layout' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' :
+                           tip.iconType === 'git-branch' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600' :
+                           tip.iconType === 'terminal' ? 'bg-slate-100 dark:bg-slate-900/30 text-slate-600' :
+                           tip.iconType === 'shield' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
+                           tip.iconType === 'zap' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
+                           tip.iconType === 'cpu' ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600' :
+                           'bg-gray-100 dark:bg-gray-900/30 text-gray-600'}`
+                        }>
+                          {/* Render the appropriate icon based on type */}
+                          {tip.iconType === 'code' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m18 16 4-4-4-4"></path>
+                              <path d="m6 8-4 4 4 4"></path>
+                              <path d="m14.5 4-5 16"></path>
+                            </svg>
+                          )}
+                          {tip.iconType === 'book-open' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                            </svg>
+                          )}
+                          {tip.iconType === 'database' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                              <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
+                            </svg>
+                          )}
+                          {tip.iconType === 'server' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                            </svg>
+                          )}
+                          {tip.iconType === 'layout' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="3" y1="9" x2="21" y2="9"></line>
+                              <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                          )}
+                          {tip.iconType === 'git-branch' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="6" y1="3" x2="6" y2="15"></line>
+                              <circle cx="18" cy="6" r="3"></circle>
+                              <circle cx="6" cy="18" r="3"></circle>
+                              <path d="M18 9a9 9 0 0 1-9 9"></path>
+                            </svg>
+                          )}
+                          {tip.iconType === 'terminal' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="4 17 10 11 4 5"></polyline>
+                              <line x1="12" y1="19" x2="20" y2="19"></line>
+                            </svg>
+                          )}
+                          {tip.iconType === 'shield' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                          )}
+                          {tip.iconType === 'zap' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                          )}
+                          {tip.iconType === 'cpu' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                              <rect x="9" y="9" width="6" height="6"></rect>
+                              <line x1="9" y1="1" x2="9" y2="4"></line>
+                              <line x1="15" y1="1" x2="15" y2="4"></line>
+                              <line x1="9" y1="20" x2="9" y2="23"></line>
+                              <line x1="15" y1="20" x2="15" y2="23"></line>
+                              <line x1="20" y1="9" x2="23" y2="9"></line>
+                              <line x1="20" y1="14" x2="23" y2="14"></line>
+                              <line x1="1" y1="9" x2="4" y2="9"></line>
+                              <line x1="1" y1="14" x2="4" y2="14"></line>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex items-center">
+                          <h3 className="font-medium">{tip.title}</h3>
+                          {tip.isNew && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs rounded-sm">New</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {tip.description}
+                      </p>
+                      <div className="flex justify-end items-center">
+                        <Button variant="link" size="sm" className="text-primary p-0">{tip.actionType}</Button>
+                      </div>
                     </div>
-                    <h3 className="font-medium">SQL Query Optimization</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Based on your recent queries, this topic will help you improve database performance.
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Recommended for you</span>
-                    <Button variant="link" size="sm" className="text-primary p-0">Explore</Button>
-                  </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
