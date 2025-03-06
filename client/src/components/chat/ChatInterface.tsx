@@ -36,7 +36,7 @@ export default function ChatInterface() {
   const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
+      id: Date.now(), // Use timestamp for uniqueness
       sender: 'ai',
       content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
       timestamp: new Date().toLocaleTimeString()
@@ -148,7 +148,7 @@ export default function ChatInterface() {
       setMessages(prev => [
         ...prev,
         {
-          id: prev.length + 1,
+          id: Date.now(), // Use timestamp for uniqueness
           sender: 'ai',
           content: response,
           timestamp: new Date().toLocaleTimeString(),
@@ -171,7 +171,7 @@ export default function ChatInterface() {
       setMessages(prev => [
         ...prev,
         {
-          id: prev.length + 1,
+          id: Date.now(), // Use timestamp for uniqueness
           sender: 'ai',
           content: "I'm sorry, I'm having trouble connecting to my AI service. Please try again in a moment.",
           timestamp: new Date().toLocaleTimeString()
@@ -231,9 +231,8 @@ export default function ChatInterface() {
       }
       
       // Create a placeholder message for the streaming response
-      // Make sure this AI message has a completely new ID that won't conflict
-      // with the user message that was just added
-      const newMessageId = messages.length + 1;
+      // Use a more reliable way to generate a unique ID that won't conflict with user message
+      const newMessageId = Date.now(); // Use timestamp for uniqueness
       
       // Add this placeholder message for AI response
       setMessages(prev => [
@@ -366,7 +365,7 @@ export default function ChatInterface() {
       setMessages(prev => [
         ...prev,
         {
-          id: prev.length + 1,
+          id: Date.now(), // Use timestamp for uniqueness
           sender: 'ai',
           content: "I'm sorry, I'm having trouble connecting to my AI service. Please try again in a moment.",
           timestamp: new Date().toLocaleTimeString()
@@ -379,11 +378,11 @@ export default function ChatInterface() {
     if (e) e.preventDefault();
     if (newMessage.trim() === '' || isTyping) return;
     
-    // Add user message
+    // Add user message with a unique timestamp-based ID
     setMessages(prev => [
       ...prev, 
       {
-        id: prev.length + 1,
+        id: Date.now(), // Use timestamp for uniqueness
         sender: 'user',
         content: newMessage,
         timestamp: new Date().toLocaleTimeString()
@@ -426,7 +425,7 @@ export default function ChatInterface() {
       
       // Convert backend messages to UI format
       const formattedMessages: Message[] = messagesData.map((msg: any, index: number) => ({
-        id: index + 1,
+        id: Date.now() + index, // Timestamp + index for uniqueness
         sender: msg.role === 'user' ? 'user' : 'ai',
         content: msg.content,
         timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString(),
@@ -436,7 +435,7 @@ export default function ChatInterface() {
       // Add default welcome message if empty
       if (formattedMessages.length === 0) {
         formattedMessages.push({
-          id: 1,
+          id: Date.now(), // Timestamp for uniqueness
           sender: 'ai',
           content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
           timestamp: new Date().toLocaleTimeString()
@@ -458,7 +457,7 @@ export default function ChatInterface() {
   const createNewSession = () => {
     setCurrentSessionId(null);
     setMessages([{
-      id: 1,
+      id: Date.now(), // Use timestamp for uniqueness
       sender: 'ai',
       content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
       timestamp: new Date().toLocaleTimeString()
