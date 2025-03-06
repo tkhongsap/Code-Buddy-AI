@@ -10,6 +10,216 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // API endpoints for the AI Code Buddy application
+  
+  // Developer tips endpoint
+  app.get("/api/developer-tips", async (req, res) => {
+    // Check both Passport and custom session authentication
+    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
+
+    try {
+      // Get userId from either Passport or custom session
+      const userId = req.isAuthenticated() 
+        ? (req.user as any).id 
+        : (req.session as any).userId;
+      
+      console.log(`Developer tips request - Auth method: ${req.isAuthenticated() ? 'Passport' : 'Custom session'}, User ID: ${userId}`);
+      
+      // Get the user's sessions
+      const sessions = await storage.getUserChatSessions(userId);
+      
+      // Collect the 30 most recent messages across all sessions
+      let allMessages: any[] = [];
+      
+      for (const session of sessions) {
+        const messages = await storage.getChatMessages(session.id);
+        allMessages = [...allMessages, ...messages.map(msg => ({
+          ...msg,
+          sessionTitle: session.title
+        }))];
+      }
+      
+      // Sort messages by timestamp (most recent first) and take the top 30
+      allMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      const recentMessages = allMessages.slice(0, 30);
+      
+      if (recentMessages.length === 0) {
+        // If no messages, return default tips
+        return res.json({
+          tips: [
+            {
+              id: 1,
+              title: "Getting Started with React",
+              description: "Learn the fundamentals of React including components, props, and state management.",
+              iconType: "book-open",
+              actionType: "Start",
+              isNew: true
+            },
+            {
+              id: 2,
+              title: "TypeScript Basics",
+              description: "Understand how to use TypeScript to add static typing to your JavaScript applications.",
+              iconType: "code",
+              actionType: "Explore",
+              isNew: false
+            },
+            {
+              id: 3,
+              title: "Modern CSS Techniques",
+              description: "Master CSS Grid, Flexbox, and responsive design patterns for modern layouts.",
+              iconType: "layout",
+              actionType: "Continue",
+              isNew: false
+            }
+          ]
+        });
+      }
+      
+      // Prepare the messages for the OpenAI prompt
+      const conversationHistory = recentMessages.map(msg => {
+        return `${msg.sender.toUpperCase()}: ${msg.content.substring(0, 1000)}${msg.content.length > 1000 ? '...' : ''}`;
+      }).join('\n\n');
+      
+      // Create the system prompt for OpenAI
+      const messages: OpenAIChatMessage[] = [
+        {
+          role: "system",
+          content: `You are an expert coding assistant analyzing a user's conversation history to provide personalized developer tips. Based on the conversation history, generate 3 personalized tips for the developer. Each tip should relate to technologies, questions, or challenges mentioned in their chat history.
+
+For each tip, provide:
+1. A concise title (5-7 words maximum)
+2. A brief description (15-20 words) outlining the value and relevance
+3. An appropriate icon type from this list: "code", "book-open", "database", "server", "layout", "git-branch", "terminal", "shield", "zap", "cpu"
+4. An action type from this list: "Continue", "Start", "Explore"
+5. Whether this is a new recommendation (true/false)
+
+Format your response as a JSON object with a 'tips' array containing 3 tip objects. Each tip should have: id, title, description, iconType, actionType, and isNew fields.
+
+The tips should be valuable, specific to the technologies discussed, and help the developer advance their skills.`
+        },
+        {
+          role: "user",
+          content: `Here's my recent conversation history. Please analyze it and generate 3 personalized developer tips for me:\n\n${conversationHistory}`
+        }
+      ];
+      
+      // Get response from OpenAI
+      try {
+        const response = await getChatCompletion(messages);
+        console.log("Developer tips response:", response);
+        
+        // Parse the JSON response
+        try {
+          // Try to parse the response as JSON
+          const tipsData = JSON.parse(response);
+          
+          // Verify the response format
+          if (tipsData && tipsData.tips && Array.isArray(tipsData.tips)) {
+            return res.json(tipsData);
+          } else {
+            // If format is incorrect, transform to expected format
+            const fallbackTips = {
+              tips: [
+                {
+                  id: 1,
+                  title: "Improve Your Code Understanding",
+                  description: "Based on your questions, reviewing fundamentals could help solve recurring issues.",
+                  iconType: "book-open",
+                  actionType: "Explore",
+                  isNew: true
+                },
+                {
+                  id: 2,
+                  title: "Try Advanced Debugging Techniques",
+                  description: "Use tracing and structured logging to identify the problems you've been discussing.",
+                  iconType: "terminal",
+                  actionType: "Start",
+                  isNew: false
+                },
+                {
+                  id: 3,
+                  title: "Refactor Your Application",
+                  description: "Apply clean code principles to address the complexity issues in your codebase.",
+                  iconType: "git-branch",
+                  actionType: "Continue",
+                  isNew: false
+                }
+              ]
+            };
+            return res.json(fallbackTips);
+          }
+        } catch (parseError) {
+          console.error("Error parsing OpenAI response as JSON:", parseError);
+          // Return fallback tips
+          return res.json({
+            tips: [
+              {
+                id: 1,
+                title: "Master Error Handling",
+                description: "Learn advanced error handling patterns to make your code more robust.",
+                iconType: "shield",
+                actionType: "Start",
+                isNew: true
+              },
+              {
+                id: 2,
+                title: "Optimize Performance",
+                description: "Identify and eliminate bottlenecks in your application for better user experience.",
+                iconType: "zap",
+                actionType: "Explore", 
+                isNew: false
+              },
+              {
+                id: 3,
+                title: "Learn Testing Strategies",
+                description: "Implement comprehensive testing to catch bugs before deployment.",
+                iconType: "code",
+                actionType: "Continue",
+                isNew: false
+              }
+            ]
+          });
+        }
+      } catch (aiError) {
+        console.error("Error getting developer tips from OpenAI:", aiError);
+        return res.status(500).json({ 
+          error: "Failed to generate developer tips",
+          tips: [
+            {
+              id: 1,
+              title: "Getting Started with React",
+              description: "Learn the fundamentals of React including components, props, and state management.",
+              iconType: "book-open",
+              actionType: "Start",
+              isNew: true
+            },
+            {
+              id: 2,
+              title: "TypeScript Basics",
+              description: "Understand how to use TypeScript to add static typing to your JavaScript applications.",
+              iconType: "code",
+              actionType: "Explore",
+              isNew: false
+            },
+            {
+              id: 3,
+              title: "Modern CSS Techniques",
+              description: "Master CSS Grid, Flexbox, and responsive design patterns for modern layouts.",
+              iconType: "layout",
+              actionType: "Continue",
+              isNew: false
+            }
+          ]
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching developer tips:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch developer tips",
+        tips: []
+      });
+    }
+  });
 
   // Dashboard data endpoint
   app.get("/api/dashboard", async (req, res) => {
