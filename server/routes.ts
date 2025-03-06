@@ -2,8 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { getChatCompletion, getChatCompletionStream, type ChatMessage } from "./openai";
-import { insertChatSessionSchema, insertChatMessageSchema } from "@shared/schema";
+import { getChatCompletion, getChatCompletionStream, type ChatMessage as OpenAIChatMessage } from "./openai";
+import { insertChatSessionSchema, insertChatMessageSchema, type ChatMessage } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -135,14 +135,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Found ${totalQueriesCount} total queries and ${savedSolutionsCount} saved solutions for user ${userId}`);
       
+      // Generate weekly activity data based on actual user chat messages
+      const weeklyActivityData = [0, 0, 0, 0, 0, 0, 0]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+      const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      
+      // Get current date and compute the date for the start of the week (Sunday)
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - dayOfWeek); // Go back to Sunday
+      startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+      
+      // For each session, analyze the message timestamps
+      for (const session of sessions) {
+        const messages = await storage.getChatMessages(session.id);
+        
+        for (const message of messages) {
+          const messageDate = new Date(message.timestamp);
+          
+          // Only count messages from current week
+          if (messageDate >= startOfWeek) {
+            const messageDayOfWeek = messageDate.getDay();
+            weeklyActivityData[messageDayOfWeek]++;
+          }
+        }
+      }
+      
+      // Reorder the data to start with Monday for display
+      const mondayBasedData = [...weeklyActivityData.slice(1), weeklyActivityData[0]];
+      const mondayBasedLabels = [...labels.slice(1), labels[0]];
+      
       const dashboardData = {
         stats: {
           totalQueries: totalQueriesCount,
           savedSolutions: savedSolutionsCount,
         },
         weeklyActivity: {
-          labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-          data: [5, 8, 12, 7, 15, 9, 3],
+          labels: mondayBasedLabels,
+          data: mondayBasedData,
         },
         recentQueries: recentQueriesData,
       };
@@ -202,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Convert the conversation history to the format expected by OpenAI
-      const messages: ChatMessage[] = [
+      const messages: OpenAIChatMessage[] = [
         // System message to set the AI's behavior
         {
           role: "system",
@@ -293,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Convert the conversation history to the format expected by OpenAI
-      const messages: ChatMessage[] = [
+      const messages: OpenAIChatMessage[] = [
         // System message to set the AI's behavior
         {
           role: "system",
@@ -404,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Convert the conversation history to the format expected by OpenAI
-      const messages: ChatMessage[] = [
+      const messages: OpenAIChatMessage[] = [
         // System message to set the AI's behavior
         {
           role: "system",
@@ -485,14 +515,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessions = await storage.getUserChatSessions(userId);
       
       // Array to hold saved responses (we'll consider all AI responses as "saved" for demo purposes)
-      let savedResponses = [];
+      const savedResponses: Array<{
+        id: number;
+        content: string;
+        timestamp: string;
+        question: string;
+      }> = [];
       
       // For each session, get AI responses and matching user queries
       for (const session of sessions) {
         const messages = await storage.getChatMessages(session.id);
         
         // Group messages into user-AI pairs
-        let currentUserQuery = null;
+        let currentUserQuery: {
+          id: number;
+          content: string;
+          sender: string;
+          timestamp: Date;
+        } | null = null;
         
         for (let i = 0; i < messages.length; i++) {
           const message = messages[i];
@@ -515,10 +555,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Sort by most recent first and limit to most recent 10
-      savedResponses.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      savedResponses = savedResponses.slice(0, 10);
+      savedResponses.sort((a, b) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+      const limitedResponses = savedResponses.slice(0, 10);
       
-      res.json(savedResponses);
+      res.json(limitedResponses);
     } catch (error) {
       console.error("Error fetching saved responses:", error);
       res.status(500).json({ error: "Failed to fetch saved responses" });
