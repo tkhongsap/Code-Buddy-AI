@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useRef, useEffect, useState } from "react";
+import { FormEvent, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -16,38 +16,25 @@ export default function MessageInput({
   isTyping 
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [lastKey, setLastKey] = useState<string>('');
   
-  // Auto-adjust height of textarea based on content
+  // Auto-resize the textarea based on content
   useEffect(() => {
     if (textareaRef.current) {
-      // Reset height to avoid constant growth
       textareaRef.current.style.height = 'auto';
-      // Set the height to the scroll height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [newMessage]);
 
-  // A direct approach to handle text input ourselves
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewMessage(e.target.value);
-  };
-  
-  // Handle key down
+  // Handle key press events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    setLastKey(e.key + (e.shiftKey ? '+shift' : ''));
-    
-    if (e.key === 'Enter') {
-      if (e.shiftKey) {
-        // Let the default behavior happen (new line)
-        return; 
-      } else {
-        e.preventDefault();
-        if (newMessage.trim()) {
-          sendMessage();
-        }
+    // If Enter is pressed without Shift, send the message
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (newMessage.trim() !== '') {
+        sendMessage();
       }
     }
+    // If Enter is pressed with Shift, do nothing (let the browser add a new line)
   };
 
   return (
@@ -60,7 +47,7 @@ export default function MessageInput({
           ref={textareaRef}
           value={newMessage} 
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder="Ask a coding question... (Shift+Enter for new line)" 
           className="flex-1 min-h-[60px] resize-none py-3 whitespace-pre-wrap"
           disabled={isTyping}

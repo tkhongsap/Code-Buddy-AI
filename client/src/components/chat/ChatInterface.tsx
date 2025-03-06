@@ -413,7 +413,7 @@ export default function ChatInterface() {
           ...prev, 
           {
             id: Date.now(), // Use timestamp for uniqueness
-            sender: 'user',
+            sender: 'user' as const, // Use a const assertion to ensure correct type
             content: userQuestion,
             timestamp: new Date().toLocaleTimeString()
           }
@@ -454,7 +454,7 @@ export default function ChatInterface() {
       // Convert backend messages to UI format
       const formattedMessages: Message[] = messagesData.map((msg: any, index: number) => ({
         id: Date.now() + index, // Timestamp + index for uniqueness
-        sender: msg.role === 'user' ? 'user' : 'ai',
+        sender: msg.role === 'user' ? ('user' as const) : ('ai' as const),
         content: msg.content,
         timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString(),
         html: msg.role === 'assistant' ? formatAIResponse(msg.content) : undefined
@@ -464,7 +464,7 @@ export default function ChatInterface() {
       if (formattedMessages.length === 0) {
         formattedMessages.push({
           id: Date.now(), // Timestamp for uniqueness
-          sender: 'ai',
+          sender: 'ai' as const,
           content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
           timestamp: new Date().toLocaleTimeString()
         });
@@ -486,7 +486,7 @@ export default function ChatInterface() {
     setCurrentSessionId(null);
     setMessages([{
       id: Date.now(), // Use timestamp for uniqueness
-      sender: 'ai',
+      sender: 'ai' as const,
       content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
       timestamp: new Date().toLocaleTimeString()
     }]);
