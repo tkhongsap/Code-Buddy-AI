@@ -30,81 +30,10 @@ export default function Dashboard() {
     // No need to provide queryFn, the default fetcher will use the queryKey as URL
   });
 
+  // No chart to initialize since we removed the Weekly Activity chart
   useEffect(() => {
-    if (!chartRef.current || !dashboardData) return;
-
-    // Only create chart if it doesn't exist yet
-    if (!chartInstanceRef.current) {
-      import('chart.js').then((Chart) => {
-        // Register required components
-        Chart.Chart.register(
-          Chart.LineController, 
-          Chart.LineElement, 
-          Chart.PointElement, 
-          Chart.CategoryScale, 
-          Chart.LinearScale,
-          Chart.Tooltip,
-          Chart.Legend,
-          Chart.Filler
-        );
-        
-        const ctx = chartRef.current?.getContext('2d');
-        if (!ctx) return;
-
-        // Clear any existing charts
-        if (chartInstanceRef.current) {
-          chartInstanceRef.current.destroy();
-        }
-
-        const isDark = document.documentElement.classList.contains('dark');
-        
-        chartInstanceRef.current = new Chart.Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: dashboardData.weeklyActivity.labels,
-            datasets: [{
-              label: 'AI Queries',
-              data: dashboardData.weeklyActivity.data,
-              borderColor: '#0e7a39',
-              backgroundColor: 'rgba(14, 122, 57, 0.1)',
-              tension: 0.4,
-              fill: true
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                }
-              },
-              x: {
-                grid: {
-                  display: false
-                }
-              }
-            }
-          }
-        });
-      });
-    }
-
-    return () => {
-      // Clean up chart instance on unmount
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-        chartInstanceRef.current = null;
-      }
-    };
-  }, [dashboardData]);
+    // Any initialization code can go here if needed
+  }, []);
 
   if (isLoading) {
     return (
@@ -215,53 +144,68 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Activity Chart & Recent Queries */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            {/* Activity Chart */}
-            <Card className="lg:col-span-2">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold">Weekly Activity</h2>
-                  <Select defaultValue="thisWeek">
-                    <SelectTrigger className="w-40 bg-transparent border-none text-sm text-muted-foreground focus:ring-0">
-                      <SelectValue placeholder="This Week" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="thisWeek">This Week</SelectItem>
-                      <SelectItem value="lastWeek">Last Week</SelectItem>
-                      <SelectItem value="lastMonth">Last Month</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="h-64">
-                  <canvas ref={chartRef} id="activity-chart"></canvas>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Queries */}
+          {/* Recent Queries Card */}
+          <div className="mb-8">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold">Recent Queries</h2>
-                  <Button variant="link" size="sm" className="text-primary">View All</Button>
+                  <Button variant="link" size="sm" className="text-primary" onClick={() => navigate("/chat")}>View All</Button>
                 </div>
+                
                 <div className="space-y-4">
-                  {dashboardData?.recentQueries.map((query, index) => (
-                    <div key={index} className="border-b border-border pb-4 last:border-0 last:pb-0">
-                      <p className="font-medium mb-1">{query.query}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-wrap gap-2">
-                          {query.tags.map((tag, tagIndex) => (
-                            <Badge key={tagIndex} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        <span className="text-xs text-muted-foreground">{query.timestamp}</span>
-                      </div>
+                  {dashboardData?.recentQueries.length === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-muted-foreground mb-4">No recent queries found</p>
+                      <Button 
+                        onClick={() => navigate("/chat")} 
+                        className="bg-primary/90 hover:bg-primary text-white"
+                      >
+                        Start a new chat
+                      </Button>
                     </div>
-                  ))}
+                  ) : (
+                    dashboardData?.recentQueries.map((query, index) => (
+                      <div key={index} className="border border-border rounded-lg overflow-hidden">
+                        {/* Collapsible Query Card */}
+                        <div 
+                          className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                          onClick={() => navigate(`/chat?sessionId=${query.sessionId}`)}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-medium text-base">{query.query}</h3>
+                            <span className="text-xs text-muted-foreground shrink-0 ml-2">{query.timestamp}</span>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {query.tags.map((tag, tagIndex) => (
+                              <Badge key={tagIndex} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          
+                          {/* Continue Chat Button */}
+                          <div className="flex justify-end mt-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/chat?sessionId=${query.sessionId}`);
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                              </svg>
+                              Continue Chat
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
