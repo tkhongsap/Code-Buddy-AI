@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,14 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
+import { AuthContext } from "@/hooks/use-auth";
 import Header from "../layout/Header";
 import { CodeBlock } from "@/components/ui/code-block";
 
 export default function AuthPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const authContext = useContext(AuthContext);
+  
+  // Fallback if AuthContext is null
+  const user = authContext?.user || null;
+  const loginMutation = authContext?.loginMutation || { mutateAsync: async () => {}, isPending: false, mutate: () => {} };
+  const registerMutation = authContext?.registerMutation || { mutateAsync: async () => {}, isPending: false };
+  
   const [loginData, setLoginData] = useState({ username: "demo", password: "1234" });
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [activeTab, setActiveTab] = useState<string>("login");

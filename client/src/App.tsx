@@ -18,8 +18,8 @@ import { ThemeProvider } from "./hooks/use-theme";
  * Provider order is important:
  * 1. ThemeProvider - Theme context
  * 2. QueryClientProvider - React Query for API requests
- * 3. Router components (Switch/Route) - Navigation structure
- * 4. AuthProvider - Auth context within the Router
+ * 3. AuthProvider - Auth context for the entire app
+ * 4. Router components (Switch/Route) - Navigation structure
  */
 function App() {
   return (

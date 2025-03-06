@@ -1,6 +1,6 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { AuthContext } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { useContext, useEffect } from "react";
 
 /**
  * Protected Route Component
@@ -17,8 +17,25 @@ export function ProtectedRoute({
   path: string;
   component: () => React.JSX.Element;
 }) {
-  const { user, isLoading } = useAuth();
+  const authContext = useContext(AuthContext);
   const [, navigate] = useLocation();
+
+  // Check if no authContext provided
+  if (!authContext) {
+    console.error("Protected route used outside of AuthProvider");
+    // Redirect to auth page
+    useEffect(() => {
+      navigate("/auth");
+    }, [navigate]);
+    
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  const { user, isLoading } = authContext;
 
   // Use useEffect for navigation to avoid React rendering issues
   useEffect(() => {
