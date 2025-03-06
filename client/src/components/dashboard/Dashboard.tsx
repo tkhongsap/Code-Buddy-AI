@@ -25,6 +25,8 @@ export default function Dashboard() {
   const chartInstanceRef = useRef<any>(null);
   // State to track expanded query cards
   const [expandedQueries, setExpandedQueries] = useState<number[]>([]);
+  // State to track if a response has been copied
+  const [copiedResponse, setCopiedResponse] = useState<number | null>(null);
 
   // Define a more specific type for our dashboard data
   interface DashboardData {
@@ -38,9 +40,11 @@ export default function Dashboard() {
     };
     recentQueries: {
       id: number;
-      query: string;
-      fullContent?: string;
-      timestamp: string;
+      query: string; // User's question
+      aiResponse?: string; // AI's response
+      fullContent?: string; // Full conversation content
+      timestamp: string; // Timestamp of the query
+      responseTimestamp?: string; // Timestamp of the response
       tags: string[];
       sessionId: number;
     }[];
@@ -56,8 +60,27 @@ export default function Dashboard() {
     );
   };
 
+  // Function to collapse all query cards
+  const collapseAll = () => {
+    setExpandedQueries([]);
+  };
+
+  // Function to copy response to clipboard
+  const copyToClipboard = (text: string, id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopiedResponse(id);
+        setTimeout(() => setCopiedResponse(null), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+  };
+
   // Helper function to truncate text for preview
   const truncateText = (text: string, maxLength: number = 75) => {
+    if (!text) return "";
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
@@ -210,7 +233,23 @@ export default function Dashboard() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold">Recent Queries</h2>
-                  <Button variant="link" size="sm" className="text-primary" onClick={() => navigate("/chat")}>View All</Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={collapseAll}
+                      className="text-xs h-8"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                      </svg>
+                      Collapse All
+                    </Button>
+                    <Button variant="link" size="sm" className="text-primary" onClick={() => navigate("/chat")}>View All</Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
@@ -241,10 +280,42 @@ export default function Dashboard() {
                                   <polyline points="9 18 15 12 9 6"></polyline>
                                 </svg>
                               </div>
-                              <h3 className="font-medium text-base">{truncateText(query.query)}</h3>
+                              <div className="flex items-center gap-1">
+                                {/* User Icon */}
+                                <div className="text-slate-500 dark:text-slate-400">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                  </svg>
+                                </div>
+                                <h3 className="font-medium text-base">
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 mr-1">Query:</span> 
+                                  {truncateText(query.query)}
+                                </h3>
+                              </div>
                             </div>
                             <span className="text-xs text-muted-foreground shrink-0 ml-2">{query.timestamp}</span>
                           </div>
+                          
+                          {/* Preview of AI Response (collapsed state) */}
+                          {!expandedQueries.includes(query.id) && query.aiResponse && (
+                            <div className="pl-7 ml-1 border-l-2 border-dashed border-slate-200 dark:border-slate-700">
+                              <div className="flex items-center gap-1 mt-1 mb-1">
+                                {/* AI Icon */}
+                                <div className="text-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <path d="M12 8v8"></path>
+                                    <path d="M8 12h8"></path>
+                                  </svg>
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">
+                                  <span className="text-xs text-primary mr-1">AI:</span> 
+                                  {truncateText(query.aiResponse, 100)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           
                           <div className="flex flex-wrap gap-2 mt-2">
                             {query.tags.map((tag, tagIndex) => (
@@ -255,7 +326,7 @@ export default function Dashboard() {
                           </div>
 
                           {!expandedQueries.includes(query.id) && (
-                            <div className="flex justify-between items-center px-4 pb-3 text-xs text-muted-foreground">
+                            <div className="flex justify-between items-center px-4 pb-1 pt-2 text-xs text-muted-foreground">
                               <span>Click to expand</span>
                               <Button 
                                 variant="ghost" 
@@ -278,13 +349,70 @@ export default function Dashboard() {
                         {/* Expandable Query Content */}
                         {expandedQueries.includes(query.id) && (
                           <div className="px-4 pb-4 pt-0 animate-slideDown border-t border-border">
-                            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md mb-3">
-                              {query.fullContent || 
-                                <div className="text-muted-foreground text-sm italic">
-                                  This is where the full conversation would appear. 
-                                  In a real implementation, this would show the complete chat history.
+                            {/* User Query */}
+                            <div className="mb-3 mt-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="p-1 rounded-full bg-slate-100 dark:bg-slate-700">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                  </svg>
                                 </div>
-                              }
+                                <span className="font-medium">User Query</span>
+                                <span className="text-xs text-muted-foreground">{query.timestamp}</span>
+                              </div>
+                              <div className="pl-8">
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md">
+                                  {query.query}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* AI Response */}
+                            <div className="mb-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="p-1 rounded-full bg-primary/10 dark:bg-primary/20 text-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <path d="M12 8v8"></path>
+                                    <path d="M8 12h8"></path>
+                                  </svg>
+                                </div>
+                                <span className="font-medium text-primary">AI Response</span>
+                                <span className="text-xs text-muted-foreground">{query.responseTimestamp || query.timestamp}</span>
+                              </div>
+                              <div className="pl-8 relative">
+                                <div className="p-3 bg-primary/5 dark:bg-primary/10 rounded-md border border-primary/10 dark:border-primary/20 text-slate-700 dark:text-slate-200">
+                                  {query.aiResponse || (
+                                    <div className="text-muted-foreground text-sm italic">
+                                      AI response not available.
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Copy button */}
+                                {query.aiResponse && (
+                                  <div className="absolute top-2 right-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0"
+                                      onClick={(e) => copyToClipboard(query.aiResponse || "", query.id, e)}
+                                    >
+                                      {copiedResponse === query.id ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                      ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             {/* Continue Chat Button */}

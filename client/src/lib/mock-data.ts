@@ -11,6 +11,270 @@ export const mockDashboardData = {
     data: [5, 8, 12, 7, 15, 9, 3]
   },
   recentQueries: [
+    { 
+      id: 1, 
+      query: 'How to implement a React useEffect hook with cleanup', 
+      timestamp: '2h ago',
+      responseTimestamp: '2h ago',
+      aiResponse: `To implement a React useEffect hook with cleanup, you need to return a cleanup function from your effect:
+
+\`\`\`jsx
+useEffect(() => {
+  // Effect code here
+  console.log('Effect running');
+  const subscription = someAPI.subscribe();
+  
+  // Return a cleanup function
+  return () => {
+    console.log('Cleanup running');
+    subscription.unsubscribe();
+  };
+}, [dependencies]);
+\`\`\`
+
+The cleanup function runs:
+- Before the component unmounts
+- Before the effect runs again if dependencies change
+
+This pattern is essential for preventing memory leaks when working with subscriptions, event listeners, or timers.`,
+      tags: ['React', 'Hooks'],
+      sessionId: 1
+    },
+    { 
+      id: 2, 
+      query: 'Best practices for TypeScript interfaces vs types', 
+      timestamp: '5h ago',
+      responseTimestamp: '5h ago',
+      aiResponse: `Both TypeScript interfaces and types can define object shapes, but they have key differences:
+
+**Interfaces:**
+- Can be extended with 'extends'
+- Can be merged when redeclared
+- Better for public APIs
+- More aligned with OOP principles
+
+**Types:**
+- Can use unions and intersections
+- Can create mapped types
+- More flexible for complex type manipulations
+- Can represent primitives directly
+
+General recommendation:
+- Use interfaces for public API objects and classes
+- Use types for unions, tuples, and complex transformations
+- Prefer interfaces until you need type-specific features
+
+Example of each:
+\`\`\`typescript
+// Interface
+interface User {
+  id: number;
+  name: string;
+}
+
+// Type
+type UserOrAdmin = User | { id: number; permissions: string[] };
+\`\`\``,
+      tags: ['TypeScript'],
+      sessionId: 2
+    },
+    { 
+      id: 3, 
+      query: 'Optimizing PostgreSQL query performance', 
+      timestamp: '1d ago',
+      responseTimestamp: '1d ago',
+      aiResponse: `To optimize PostgreSQL query performance, focus on these key areas:
+
+1. **Indexing:**
+   - Create appropriate indexes for frequently queried columns
+   - Use EXPLAIN ANALYZE to verify index usage
+   - Consider composite indexes for multi-column filters
+
+2. **Query Structure:**
+   - Avoid SELECT * and request only needed columns
+   - Use LIMIT for large result sets
+   - Be cautious with JOIN operations on large tables
+
+3. **Table Design:**
+   - Normalize data appropriately
+   - Use proper data types (e.g., UUID vs VARCHAR)
+   - Consider partitioning large tables
+
+4. **Database Configuration:**
+   - Tune work_mem for complex sorts
+   - Adjust shared_buffers for caching
+   - Configure maintenance settings appropriately
+
+Example of adding an index:
+\`\`\`sql
+CREATE INDEX idx_users_email ON users(email);
+\`\`\`
+
+Example of using EXPLAIN:
+\`\`\`sql
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 123;
+\`\`\``,
+      tags: ['SQL', 'Database'],
+      sessionId: 3
+    },
+    { 
+      id: 4, 
+      query: 'CSS Grid vs Flexbox for responsive layouts', 
+      timestamp: '2d ago',
+      responseTimestamp: '2d ago',
+      aiResponse: `**CSS Grid vs Flexbox: When to use each**
+
+**Flexbox:**
+- One-dimensional layouts (row OR column)
+- Alignment and distribution of items within a container
+- When you need to allocate space proportionally
+- For smaller component layouts
+
+**CSS Grid:**
+- Two-dimensional layouts (rows AND columns)
+- Complex grid-based interfaces
+- Precise placement of items in a layout
+- Overall page layouts
+
+**Complementary Use:**
+They work well together—Grid for the overall layout, Flexbox for component alignment.
+
+**Example Flexbox:**
+\`\`\`css
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+\`\`\`
+
+**Example Grid:**
+\`\`\`css
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+\`\`\`
+
+Both are well-supported in modern browsers and are essential tools for responsive design.`,
+      tags: ['CSS', 'Layout'],
+      sessionId: 4
+    }
+  ],
+  learningProgress: [
+    { id: 1, skill: 'React', progress: 85, color: '#61DAFB' },
+    { id: 2, skill: 'TypeScript', progress: 72, color: '#3178C6' },
+    { id: 3, skill: 'Node.js', progress: 64, color: '#339933' },
+    { id: 4, skill: 'PostgreSQL', progress: 58, color: '#336791' }
+  ]
+};
+
+// Mock data for saved responses in chat interface
+export const mockSavedResponses = [
+  {
+    id: 1,
+    content: `Here's how you can implement a React useEffect hook with cleanup:
+
+\`\`\`jsx
+useEffect(() => {
+  // Your effect code here
+  const subscription = someAPI.subscribe();
+
+  // Return a cleanup function
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [dependency1, dependency2]);
+\`\`\`
+
+The cleanup function runs before the component unmounts or before the effect runs again due to dependency changes.`,
+    timestamp: '2023-05-10 14:32',
+    question: 'How to implement a React useEffect hook with cleanup'
+  },
+  {
+    id: 2,
+    content: `In TypeScript, both interfaces and types can be used to define object shapes, but they have some differences:
+
+\`\`\`typescript
+// Interface
+interface User {
+  id: number;
+  name: string;
+  role?: string; // Optional property
+}
+
+// Type alias
+type User = {
+  id: number;
+  name: string;
+  role?: string;
+};
+\`\`\`
+
+Key differences:
+- Interfaces can be extended with the extends keyword
+- Types can use union and intersection operators
+- Interfaces can be merged when declared multiple times
+- Types can be used for primitives, unions, and tuples`,
+    timestamp: '2023-05-08 09:17',
+    question: 'What are the differences between TypeScript interfaces and types?'
+  }
+];
+
+// Mock data for learning progress tracker
+export const mockLearningData = {
+  overallProgress: {
+    completion: 72,
+    coursesCompleted: 7,
+    activeCourses: 3,
+    practiceHours: 48,
+    streakDays: 12
+  },
+  skills: [
+    { 
+      name: 'React', 
+      progress: 85, 
+      level: 'Advanced', 
+      color: '#61DAFB', 
+      monthlyGain: 12,
+      icon: '<svg viewBox="0 0 24 24" fill="#61DAFB"><path d="M12 9.861a2.139 2.139 0 100 4.278 2.139 2.139 0 100-4.278zm-5.992 6.394l-.472-.12C2.018 15.246 0 13.737 0 11.996s2.018-3.25 5.536-4.139l.472-.119.133.468a23.53 23.53 0 001.363 3.578l.101.213-.101.213a23.307 23.307 0 00-1.363 3.578l-.133.467zM5.317 8.95c-2.674.751-4.315 1.9-4.315 3.046 0 1.145 1.641 2.294 4.315 3.046.317-1.023.711-2.083 1.185-3.046-.473-.963-.868-2.023-1.185-3.046zm10.675 6.484l-.133-.469a23.357 23.357 0 00-1.364-3.577l-.101-.213.101-.213a23.42 23.42 0 001.364-3.578l.133-.468.473.119c3.517.889 5.535 2.398 5.535 4.14s-2.018 3.25-5.535 4.139l-.473.12zm-.491-4.259c.475.963.87 2.023 1.186 3.046 2.674-.752 4.315-1.901 4.315-3.046 0-1.146-1.641-2.294-4.315-3.046-.317 1.023-.711 2.083-1.186 3.046zM5.31 8.945l-.133-.467c-.945-3.323-.3-5.92 1.592-6.653 1.892-.732 4.416.823 6.669 4.203l.235.401-.235.401a23.207 23.207 0 00-1.7 3.537l-.101.213-.213.099a23.25 23.25 0 00-3.426 2.11l-.378.335-.445-.237c-2.108-1.124-3.686-2.57-4.455-4.207l-.13-.467zm2.455-5.92c-.318 0-.601.062-.842.176-.957.37-1.35 2.127-.705 4.415.652-1.451 1.5-2.756 2.496-3.833-.357-.265-.732-.392-1.15-.392l.201-.366zm9.433 1.727c-1.892-.731-4.416.824-6.669 4.203l-.235.401.235.401a23.215 23.215 0 001.7 3.537l.101.213.213.099a23.252 23.252 0 003.426 2.11l.378.335.445-.237c2.108-1.124 3.686-2.57 4.455-4.207l.13-.467.133-.466c.944-3.323.299-5.92-1.593-6.652l-.263-.184zm.11 4.886c.318 0 .601.062.841.176.958.37 1.351 2.127.705 4.415-.651-1.451-1.499-2.756-2.496-3.833.357-.265.732-.392 1.15-.392l-.2-.366z"/></svg>'
+    },
+    { 
+      name: 'TypeScript', 
+      progress: 72, 
+      level: 'Intermediate', 
+      color: '#3178C6', 
+      monthlyGain: 15,
+      icon: '<svg viewBox="0 0 24 24" fill="#3178C6"><path d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/></svg>'
+    },
+    { 
+      name: 'Node.js', 
+      progress: 64, 
+      level: 'Intermediate', 
+      color: '#339933', 
+      monthlyGain: 8,
+      icon: '<svg viewBox="0 0 24 24" fill="#339933"><path d="M11.998,24c-0.321,0-0.641-0.084-0.922-0.247l-2.936-1.737c-0.438-0.245-0.224-0.332-0.08-0.383 c0.585-0.203,0.703-0.25,1.328-0.604c0.065-0.037,0.151-0.023,0.218,0.017l2.256,1.339c0.082,0.045,0.197,0.045,0.272,0l8.795-5.076 c0.082-0.047,0.134-0.141,0.134-0.238V6.921c0-0.099-0.053-0.192-0.137-0.242l-8.791-5.072c-0.081-0.047-0.189-0.047-0.271,0 L3.075,6.68C2.99,6.729,2.936,6.825,2.936,6.921v10.15c0,0.097,0.054,0.189,0.139,0.235l2.409,1.392 c1.307,0.654,2.108-0.116,2.108-0.89V7.787c0-0.142,0.114-0.253,0.256-0.253h1.115c0.139,0,0.255,0.112,0.255,0.253v10.021 c0,1.745-0.95,2.745-2.604,2.745c-0.508,0-0.909,0-2.026-0.551L2.28,18.675c-0.57-0.329-0.922-0.945-0.922-1.604V6.921 c0-0.659,0.353-1.275,0.922-1.603l8.795-5.082c0.557-0.315,1.296-0.315,1.848,0l8.794,5.082c0.57,0.329,0.924,0.944,0.924,1.603 v10.15c0,0.659-0.354,1.273-0.924,1.604l-8.794,5.078C12.643,23.916,12.324,24,11.998,24z M19.099,13.993 c0-1.9-1.284-2.406-3.987-2.763c-2.731-0.361-3.009-0.548-3.009-1.187c0-0.528,0.235-1.233,2.258-1.233 c1.807,0,2.473,0.389,2.747,1.607c0.024,0.115,0.129,0.199,0.247,0.199h1.141c0.071,0,0.138-0.031,0.186-0.081 c0.048-0.054,0.074-0.123,0.067-0.196c-0.177-2.098-1.571-3.076-4.388-3.076c-2.508,0-4.004,1.058-4.004,2.833 c0,1.925,1.488,2.457,3.895,2.695c2.88,0.282,3.103,0.703,3.103,1.269c0,0.983-0.789,1.402-2.642,1.402 c-2.327,0-2.839-0.584-3.011-1.742c-0.02-0.124-0.126-0.215-0.253-0.215h-1.137c-0.141,0-0.254,0.112-0.254,0.253 c0,1.482,0.806,3.248,4.655,3.248C17.501,17.007,19.099,15.91,19.099,13.993z"/></svg>'
+    },
+    { 
+      name: 'PostgreSQL', 
+      progress: 58, 
+      level: 'Intermediate', 
+      color: '#336791', 
+      monthlyGain: 5,
+// Mock data for the dashboard
+export const mockDashboardData = {
+  stats: {
+    totalQueries: 156,
+    savedSolutions: 47,
+    activeCourses: 3,
+    skillProgress: 72
+  },
+  weeklyActivity: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    data: [5, 8, 12, 7, 15, 9, 3]
+  },
+  recentQueries: [
     { id: 1, query: 'How to implement a React useEffect hook with cleanup', timestamp: '2h ago', tags: ['React', 'Hooks'] },
     { id: 2, query: 'Best practices for TypeScript interfaces vs types', timestamp: '5h ago', tags: ['TypeScript'] },
     { id: 3, query: 'Optimizing PostgreSQL query performance', timestamp: '1d ago', tags: ['SQL', 'Database'] },
