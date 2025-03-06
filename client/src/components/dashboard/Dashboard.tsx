@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstanceRef = useRef<any>(null);
+  // State to track expanded query cards
+  const [expandedQueries, setExpandedQueries] = useState<number[]>([]);
 
   // Define a more specific type for our dashboard data
   interface DashboardData {
@@ -43,6 +45,22 @@ export default function Dashboard() {
       sessionId: number;
     }[];
   }
+
+  // Function to toggle expanded state of a query card
+  const toggleQueryExpansion = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigating to chat when clicking to expand
+    setExpandedQueries(prev => 
+      prev.includes(id) 
+        ? prev.filter(queryId => queryId !== id) 
+        : [...prev, id]
+    );
+  };
+
+  // Helper function to truncate text for preview
+  const truncateText = (text: string, maxLength: number = 75) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
 
   // Fetch dashboard data from the API
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
@@ -207,15 +225,24 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   ) : (
-                    dashboardData?.recentQueries.map((query, index) => (
-                      <div key={index} className="border border-border rounded-lg overflow-hidden">
-                        {/* Collapsible Query Card */}
+                    dashboardData?.recentQueries.map((query) => (
+                      <div key={query.id} className="border border-border rounded-lg overflow-hidden">
+                        {/* Query Card Header - Always visible */}
                         <div 
                           className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                          onClick={() => navigate(`/chat?sessionId=${query.sessionId}`)}
+                          onClick={(e) => toggleQueryExpansion(query.id, e)}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium text-base">{query.query}</h3>
+                            <div className="flex items-center gap-2">
+                              {/* Expand/Collapse Icon */}
+                              <div className="text-primary transition-transform duration-200" 
+                                style={{ transform: expandedQueries.includes(query.id) ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                              </div>
+                              <h3 className="font-medium text-base">{truncateText(query.query)}</h3>
+                            </div>
                             <span className="text-xs text-muted-foreground shrink-0 ml-2">{query.timestamp}</span>
                           </div>
                           
@@ -226,25 +253,58 @@ export default function Dashboard() {
                               </Badge>
                             ))}
                           </div>
-                          
-                          {/* Continue Chat Button */}
-                          <div className="flex justify-end mt-3">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/chat?sessionId=${query.sessionId}`);
-                              }}
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                              </svg>
-                              Continue Chat
-                            </Button>
-                          </div>
+
+                          {!expandedQueries.includes(query.id) && (
+                            <div className="flex justify-between items-center px-4 pb-3 text-xs text-muted-foreground">
+                              <span>Click to expand</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/chat?sessionId=${query.sessionId}`);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                Continue Chat
+                              </Button>
+                            </div>
+                          )}
                         </div>
+                        
+                        {/* Expandable Query Content */}
+                        {expandedQueries.includes(query.id) && (
+                          <div className="px-4 pb-4 pt-0 animate-slideDown border-t border-border">
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-md mb-3">
+                              {query.fullContent || 
+                                <div className="text-muted-foreground text-sm italic">
+                                  This is where the full conversation would appear. 
+                                  In a real implementation, this would show the complete chat history.
+                                </div>
+                              }
+                            </div>
+                            
+                            {/* Continue Chat Button */}
+                            <div className="flex justify-end">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/chat?sessionId=${query.sessionId}`);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                Continue Chat
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -252,8 +312,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-
-
 
           {/* Recommended Learning */}
           <Card>
