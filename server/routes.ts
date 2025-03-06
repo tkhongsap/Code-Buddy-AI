@@ -108,15 +108,25 @@ The tips should be valuable, specific to the technologies discussed, and help th
         const response = await getChatCompletion(messages);
         console.log("Developer tips response:", response);
         
-        // Parse the JSON response
+        // Process and parse the JSON response
         try {
+          console.log("Raw OpenAI response:", response);
+          
+          // Clean up the response - remove markdown code blocks if present
+          let cleanedResponse = response.replace(/```json\s+/g, '').replace(/```\s*$/g, '');
+          cleanedResponse = cleanedResponse.trim();
+          
+          console.log("Cleaned response:", cleanedResponse);
+          
           // Try to parse the response as JSON
-          const tipsData = JSON.parse(response);
+          const tipsData = JSON.parse(cleanedResponse);
           
           // Verify the response format
           if (tipsData && tipsData.tips && Array.isArray(tipsData.tips)) {
+            console.log("Valid tips data parsed from OpenAI response");
             return res.json(tipsData);
           } else {
+            console.log("Response has incorrect format, using structured fallback");
             // If format is incorrect, transform to expected format
             const fallbackTips = {
               tips: [
@@ -150,7 +160,26 @@ The tips should be valuable, specific to the technologies discussed, and help th
           }
         } catch (parseError) {
           console.error("Error parsing OpenAI response as JSON:", parseError);
-          // Return fallback tips
+          
+          // Try to extract JSON from the response using regex
+          try {
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const extractedJson = jsonMatch[0];
+              console.log("Attempting to parse extracted JSON:", extractedJson);
+              const extractedData = JSON.parse(extractedJson);
+              
+              if (extractedData && extractedData.tips && Array.isArray(extractedData.tips)) {
+                console.log("Successfully extracted and parsed JSON from response");
+                return res.json(extractedData);
+              }
+            }
+          } catch (extractError) {
+            console.error("Error extracting JSON from response:", extractError);
+          }
+          
+          // Return fallback tips as last resort
+          console.log("Using default fallback tips");
           return res.json({
             tips: [
               {
