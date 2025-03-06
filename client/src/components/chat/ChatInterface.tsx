@@ -390,8 +390,9 @@ export default function ChatInterface() {
     setIsTyping(true);
     
     // Prepare conversation history to send to the API
-    // We exclude the initial greeting and the message we just added
-    const conversationHistory = messages.slice(1);
+    // We exclude the initial greeting and only include messages up to the one BEFORE the one we just added
+    // This prevents sending the current message as part of the conversation history
+    const conversationHistory = messages.slice(1, messages.length - 1);
     
     // If streaming is enabled, use streaming API
     if (useStreaming) {
