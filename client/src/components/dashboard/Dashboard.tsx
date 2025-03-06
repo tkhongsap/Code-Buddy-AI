@@ -45,10 +45,32 @@ export default function Dashboard() {
   }
 
   // Fetch dashboard data from the API
-  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
+  const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
-    // No need to provide queryFn, the default fetcher will use the queryKey as URL
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        if (!response.ok) {
+          console.error('Dashboard API error:', response.status, response.statusText);
+          throw new Error(`Dashboard API error: ${response.status}`);
+        }
+        return await response.json();
+      } catch (err) {
+        console.error('Dashboard data fetch error:', err);
+        throw err;
+      }
+    }
   });
+
+  // Add debug logging
+  useEffect(() => {
+    if (dashboardData) {
+      console.log('Dashboard data loaded:', dashboardData);
+    }
+    if (error) {
+      console.error('Dashboard query error:', error);
+    }
+  }, [dashboardData, error]);
 
   // No chart to initialize since we removed the Weekly Activity chart
   useEffect(() => {

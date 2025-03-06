@@ -13,10 +13,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Dashboard data endpoint
   app.get("/api/dashboard", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    // Check both Passport and custom session authentication
+    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
 
     try {
-      const userId = (req.user as any).id;
+      // Get userId from either Passport or custom session
+      const userId = req.isAuthenticated() 
+        ? (req.user as any).id 
+        : (req.session as any).userId;
+      
+      console.log(`Dashboard request - Auth method: ${req.isAuthenticated() ? 'Passport' : 'Custom session'}, User ID: ${userId}`);
       
       // Get the user's sessions
       const sessions = await storage.getUserChatSessions(userId);
