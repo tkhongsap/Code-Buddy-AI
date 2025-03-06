@@ -1,6 +1,6 @@
-import { FormEvent } from "react";
+import { FormEvent, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MessageInputProps {
   newMessage: string;
@@ -15,15 +15,31 @@ export default function MessageInput({
   sendMessage, 
   isTyping 
 }: MessageInputProps) {
+  // Handle key press events
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // If Enter is pressed without Shift, submit the form
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (newMessage.trim() !== '') {
+        sendMessage();
+      }
+    }
+  };
+
   return (
     <div className="border-t bg-card p-4">
-      <form onSubmit={sendMessage} className="flex items-center space-x-2">
-        <Input 
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        sendMessage();
+      }} className="flex items-start space-x-2">
+        <Textarea
           value={newMessage} 
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Ask a coding question..." 
-          className="flex-1 py-6"
+          onKeyDown={handleKeyPress}
+          placeholder="Ask a coding question... (Shift+Enter for new line)" 
+          className="flex-1 min-h-[60px] resize-none py-3"
           disabled={isTyping}
+          rows={1}
         />
         <Button 
           type="submit" 
