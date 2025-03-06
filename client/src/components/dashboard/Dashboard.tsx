@@ -17,6 +17,8 @@ import Footer from "../layout/Footer";
 import { useAuth } from "@/hooks/use-auth";
 import { mockDashboardData } from "@/lib/mock-data";
 import { useQuery } from "@tanstack/react-query";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 // Add Message interface to match the one in ChatInterface.tsx
 interface Message {
@@ -95,6 +97,35 @@ export default function Dashboard() {
     return text.substring(0, maxLength) + '...';
   };
 
+  // Function to format AI responses similar to ChatInterface
+  const formatAIResponse = (text: string): string => {
+    try {
+      // Using a simpler implementation that doesn't rely on custom renderer
+      let htmlContent = marked.parse(text);
+      
+      // Safety: sanitize HTML to prevent XSS attacks
+      let sanitizedHtml: string;
+      
+      // Use type assertion to access DOMPurify's sanitize function
+      const purify = DOMPurify as any;
+      if (purify.sanitize) {
+        sanitizedHtml = purify.sanitize(htmlContent);
+      } else if (purify.default && purify.default.sanitize) {
+        sanitizedHtml = purify.default.sanitize(htmlContent);
+      } else {
+        // Fallback if DOMPurify isn't working as expected
+        console.warn('DOMPurify not available, using unsanitized HTML');
+        sanitizedHtml = htmlContent as string;
+      }
+      
+      return sanitizedHtml;
+    } catch (error) {
+      console.error('Error formatting markdown:', error);
+      // Return a safe fallback
+      return `<p>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+    }
+  };
+
   // Fetch dashboard data from the API
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
@@ -127,6 +158,80 @@ export default function Dashboard() {
   useEffect(() => {
     // Any initialization code can go here if needed
   }, []);
+
+  // Process code blocks after rendering
+  useEffect(() => {
+    if (!dashboardData) return;
+
+    // Function to load Prism and process code blocks
+    const loadPrismAndProcessCodeBlocks = async () => {
+      try {
+        // Target code elements in expanded AI responses
+        const codeElements = document.querySelectorAll('.dashboard-ai-response pre code, .code-block');
+        
+        if (codeElements.length === 0) return;
+        
+        const Prism = await import('prismjs');
+        
+        // Load commonly used languages in parallel
+        await Promise.all([
+          import('prismjs/components/prism-javascript'),
+          import('prismjs/components/prism-jsx'),
+          import('prismjs/components/prism-typescript'),
+          import('prismjs/components/prism-tsx'),
+          import('prismjs/components/prism-css'),
+          import('prismjs/components/prism-python'),
+          import('prismjs/components/prism-java'),
+          import('prismjs/components/prism-json'),
+          import('prismjs/components/prism-bash'),
+        ]);
+        
+        // Process code blocks
+        codeElements.forEach(element => {
+          try {
+            // Try to determine language from class (e.g., "language-python")
+            let language = 'text';
+            element.classList.forEach(className => {
+              if (className.startsWith('language-')) {
+                language = className.replace('language-', '');
+              }
+            });
+            
+            // Set language class if not already present
+            if (!element.classList.contains(`language-${language}`)) {
+              element.className = `language-${language}`;
+            }
+            
+            // Highlight with Prism
+            if (element instanceof HTMLElement) {
+              Prism.default.highlightElement(element);
+            }
+            
+            // Style the parent pre element
+            const preElement = element.parentElement;
+            if (preElement && preElement.tagName === 'PRE') {
+              preElement.classList.add('code-block-pre');
+              preElement.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
+              preElement.style.color = 'var(--code-fg, #d4d4d4)';
+              preElement.style.margin = '0';
+              preElement.style.padding = '1rem';
+              preElement.style.borderRadius = '4px';
+              preElement.style.overflow = 'auto';
+            }
+          } catch (error) {
+            console.warn('Error processing code element:', error);
+          }
+        });
+      } catch (error) {
+        console.error('Error loading Prism or languages:', error);
+      }
+    };
+    
+    // Only run when there are expanded queries
+    if (expandedQueries.length > 0) {
+      loadPrismAndProcessCodeBlocks();
+    }
+  }, [dashboardData, expandedQueries]);
 
   if (isLoading) {
     return (
@@ -321,7 +426,17 @@ export default function Dashboard() {
                                 </div>
                                 <p className="text-sm text-slate-600 dark:text-slate-300">
                                   <span className="text-xs text-primary mr-1">AI:</span> 
-                                  {truncateText(query.aiResponse, 100)}
+                                  {/* Strip markdown and code blocks for preview */}
+                                  {truncateText(
+                                    query.aiResponse
+                                      .replace(/```[\s\S]*?```/g, '[Code Block]') // Replace code blocks
+                                      .replace(/\*\*(.*?)\*\*/g, '$1')           // Remove bold syntax
+                                      .replace(/\*(.*?)\*/g, '$1')               // Remove italic syntax
+                                      .replace(/\[(.*?)\]\(.*?\)/g, '$1')        // Replace links with just the text
+                                      .replace(/#{1,6}\s?(.*?)$/gm, '$1')        // Remove headers
+                                      .trim(), 
+                                    100
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -394,7 +509,11 @@ export default function Dashboard() {
                                           ? 'bg-slate-50 dark:bg-slate-800/50' 
                                           : 'bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 text-slate-700 dark:text-slate-200'
                                       }`}>
-                                        {message.content}
+                                        {message.sender === 'ai' && message.html ? (
+                                          <div className="dashboard-ai-response" dangerouslySetInnerHTML={{ __html: message.html || formatAIResponse(message.content) }} />
+                                        ) : (
+                                          <div className="whitespace-pre-wrap">{message.content}</div>
+                                        )}
                                         
                                         {/* Copy button for AI responses */}
                                         {message.sender === 'ai' && (
@@ -460,7 +579,12 @@ export default function Dashboard() {
                                   </div>
                                   <div className="pl-8 relative">
                                     <div className="p-3 bg-primary/5 dark:bg-primary/10 rounded-md border border-primary/10 dark:border-primary/20 text-slate-700 dark:text-slate-200">
-                                      {query.aiResponse || (
+                                      {query.aiResponse ? (
+                                        <div 
+                                          className="dashboard-ai-response" 
+                                          dangerouslySetInnerHTML={{ __html: formatAIResponse(query.aiResponse) }}
+                                        />
+                                      ) : (
                                         <div className="text-muted-foreground text-sm italic">
                                           AI response not available.
                                         </div>
