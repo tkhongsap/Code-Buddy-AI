@@ -230,6 +230,9 @@ export default function ChatInterface() {
         eventSourceRef.current = null;
       }
       
+      // First get the current state of messages to avoid race conditions
+      const currentMessages = [...messages];
+      
       // Create a placeholder message for the streaming response
       // Use a more reliable way to generate a unique ID that won't conflict with user message
       const newMessageId = Date.now(); // Use timestamp for uniqueness
@@ -306,34 +309,50 @@ export default function ChatInterface() {
                 setStreamingResponse(completeResponse);
                 
                 // Update message in real-time
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === newMessageId 
-                      ? {
-                          ...msg,
-                          content: completeResponse,
-                          html: formatAIResponse(completeResponse)
-                        } 
-                      : msg
-                  )
-                );
+                // Using a safer approach that won't modify user messages
+                setMessages(prev => {
+                  // Find the AI message with our specific ID
+                  const aiMessageIndex = prev.findIndex(msg => msg.id === newMessageId);
+                  
+                  // If the AI message is found, update only that message
+                  if (aiMessageIndex !== -1) {
+                    const updatedMessages = [...prev];
+                    updatedMessages[aiMessageIndex] = {
+                      ...updatedMessages[aiMessageIndex],
+                      content: completeResponse,
+                      html: formatAIResponse(completeResponse)
+                    };
+                    return updatedMessages;
+                  }
+                  
+                  // If AI message not found (unlikely), don't modify anything
+                  return prev;
+                });
               } else if (jsonData.done && jsonData.fullResponse) {
                 // Final response received
                 completeResponse = jsonData.fullResponse;
                 setStreamingResponse(completeResponse);
                 
                 // Update message with complete response
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === newMessageId 
-                      ? {
-                          ...msg,
-                          content: completeResponse,
-                          html: formatAIResponse(completeResponse)
-                        } 
-                      : msg
-                  )
-                );
+                // Using the same safer approach
+                setMessages(prev => {
+                  // Find the AI message with our specific ID
+                  const aiMessageIndex = prev.findIndex(msg => msg.id === newMessageId);
+                  
+                  // If the AI message is found, update only that message
+                  if (aiMessageIndex !== -1) {
+                    const updatedMessages = [...prev];
+                    updatedMessages[aiMessageIndex] = {
+                      ...updatedMessages[aiMessageIndex],
+                      content: completeResponse,
+                      html: formatAIResponse(completeResponse)
+                    };
+                    return updatedMessages;
+                  }
+                  
+                  // If AI message not found (unlikely), don't modify anything
+                  return prev;
+                });
                 
                 setIsTyping(false);
               }
@@ -378,25 +397,34 @@ export default function ChatInterface() {
     if (e) e.preventDefault();
     if (newMessage.trim() === '' || isTyping) return;
     
-    // Add user message with a unique timestamp-based ID
-    setMessages(prev => [
-      ...prev, 
-      {
-        id: Date.now(), // Use timestamp for uniqueness
-        sender: 'user',
-        content: newMessage,
-        timestamp: new Date().toLocaleTimeString()
-      }
-    ]);
-    
     const userQuestion = newMessage;
     setNewMessage('');
     setIsTyping(true);
     
-    // Prepare conversation history to send to the API
-    // We exclude the initial greeting and only include messages up to the one BEFORE the one we just added
-    // This prevents sending the current message as part of the conversation history
-    const conversationHistory = messages.slice(1, messages.length - 1);
+    // Get current messages for conversation history
+    // before adding the new user message
+    const conversationHistory = messages.slice(1);
+    
+    // Add user message with a unique timestamp-based ID
+    // Using a promise to ensure the state update completes
+    await new Promise<void>(resolve => {
+      setMessages(prev => {
+        const updatedMessages = [
+          ...prev, 
+          {
+            id: Date.now(), // Use timestamp for uniqueness
+            sender: 'user',
+            content: userQuestion,
+            timestamp: new Date().toLocaleTimeString()
+          }
+        ];
+        
+        // Resolve once the state update is processed
+        setTimeout(resolve, 0);
+        
+        return updatedMessages;
+      });
+    });
     
     // If streaming is enabled, use streaming API
     if (useStreaming) {
