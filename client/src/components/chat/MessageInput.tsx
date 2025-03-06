@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useRef, useEffect } from "react";
+import { FormEvent, KeyboardEvent, useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -16,6 +16,7 @@ export default function MessageInput({
   isTyping 
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [lastKey, setLastKey] = useState<string>('');
   
   // Auto-adjust height of textarea based on content
   useEffect(() => {
@@ -27,35 +28,25 @@ export default function MessageInput({
     }
   }, [newMessage]);
 
-  // Handle key press events
-  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // If Enter is pressed without Shift, submit the form
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (newMessage.trim() !== '') {
-        sendMessage();
-      }
-    }
-    // If Enter is pressed WITH Shift, add a new line
-    else if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      const cursorPosition = e.currentTarget.selectionStart;
-      const cursorEnd = e.currentTarget.selectionEnd;
-      
-      // Insert a newline at cursor position
-      const textBefore = newMessage.substring(0, cursorPosition);
-      const textAfter = newMessage.substring(cursorEnd);
-      const newText = textBefore + '\n' + textAfter;
-      
-      setNewMessage(newText);
-      
-      // Set cursor position after the inserted newline
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart = cursorPosition + 1;
-          textareaRef.current.selectionEnd = cursorPosition + 1;
+  // A direct approach to handle text input ourselves
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+  };
+  
+  // Handle key down
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    setLastKey(e.key + (e.shiftKey ? '+shift' : ''));
+    
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Let the default behavior happen (new line)
+        return; 
+      } else {
+        e.preventDefault();
+        if (newMessage.trim()) {
+          sendMessage();
         }
-      }, 0);
+      }
     }
   };
 
