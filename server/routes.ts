@@ -44,34 +44,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recentMessages = allMessages.slice(0, 30);
       
       if (recentMessages.length === 0) {
-        // If no messages, return default tips
+        // If no messages, return a specific message about needing chat history
         return res.json({
-          tips: [
-            {
-              id: 1,
-              title: "Getting Started with React",
-              description: "Learn the fundamentals of React including components, props, and state management.",
-              iconType: "book-open",
-              actionType: "Start",
-              isNew: true
-            },
-            {
-              id: 2,
-              title: "TypeScript Basics",
-              description: "Understand how to use TypeScript to add static typing to your JavaScript applications.",
-              iconType: "code",
-              actionType: "Explore",
-              isNew: false
-            },
-            {
-              id: 3,
-              title: "Modern CSS Techniques",
-              description: "Master CSS Grid, Flexbox, and responsive design patterns for modern layouts.",
-              iconType: "layout",
-              actionType: "Continue",
-              isNew: false
-            }
-          ]
+          message: "Insufficient chat history to generate personalized tips",
+          tips: []
         });
       }
       
@@ -178,67 +154,18 @@ The tips should be valuable, specific to the technologies discussed, and help th
             console.error("Error extracting JSON from response:", extractError);
           }
           
-          // Return fallback tips as last resort
-          console.log("Using default fallback tips");
-          return res.json({
-            tips: [
-              {
-                id: 1,
-                title: "Master Error Handling",
-                description: "Learn advanced error handling patterns to make your code more robust.",
-                iconType: "shield",
-                actionType: "Start",
-                isNew: true
-              },
-              {
-                id: 2,
-                title: "Optimize Performance",
-                description: "Identify and eliminate bottlenecks in your application for better user experience.",
-                iconType: "zap",
-                actionType: "Explore", 
-                isNew: false
-              },
-              {
-                id: 3,
-                title: "Learn Testing Strategies",
-                description: "Implement comprehensive testing to catch bugs before deployment.",
-                iconType: "code",
-                actionType: "Continue",
-                isNew: false
-              }
-            ]
+          // Return error instead of fallback tips
+          console.log("Error parsing LLM response, returning error");
+          return res.status(500).json({ 
+            error: "Failed to generate developer tips - Invalid response format",
+            tips: []
           });
         }
       } catch (aiError) {
         console.error("Error getting developer tips from OpenAI:", aiError);
         return res.status(500).json({ 
           error: "Failed to generate developer tips",
-          tips: [
-            {
-              id: 1,
-              title: "Getting Started with React",
-              description: "Learn the fundamentals of React including components, props, and state management.",
-              iconType: "book-open",
-              actionType: "Start",
-              isNew: true
-            },
-            {
-              id: 2,
-              title: "TypeScript Basics",
-              description: "Understand how to use TypeScript to add static typing to your JavaScript applications.",
-              iconType: "code",
-              actionType: "Explore",
-              isNew: false
-            },
-            {
-              id: 3,
-              title: "Modern CSS Techniques",
-              description: "Master CSS Grid, Flexbox, and responsive design patterns for modern layouts.",
-              iconType: "layout",
-              actionType: "Continue",
-              isNew: false
-            }
-          ]
+          tips: []
         });
       }
     } catch (error) {

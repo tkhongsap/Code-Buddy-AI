@@ -733,8 +733,11 @@ export default function Dashboard() {
                       <line x1="12" y1="8" x2="12" y2="12"></line>
                       <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
-                    <p>Failed to load developer tips</p>
+                    <p>Failed to generate personalized developer tips</p>
                   </div>
+                  <p className="text-muted-foreground mb-4">
+                    We're currently unable to analyze your chat history to create personalized recommendations.
+                  </p>
                   <Button 
                     variant="outline" 
                     onClick={() => refetchTips()}
@@ -743,9 +746,33 @@ export default function Dashboard() {
                     Try Again
                   </Button>
                 </div>
+              ) : developerTipsData?.message ? (
+                <div className="text-center py-8">
+                  <div className="text-amber-500 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                      <line x1="12" y1="9" x2="12" y2="13"></line>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <p>{developerTipsData.message}</p>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Continue using the AI Code Buddy to build up your chat history so we can provide personalized recommendations.
+                  </p>
+                  <Button 
+                    onClick={() => navigate("/chat")} 
+                    className="bg-primary hover:bg-primary/90 text-white"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Start a new chat
+                  </Button>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {developerTipsData?.tips.map((tip) => (
+                  {developerTipsData?.tips && developerTipsData.tips.length > 0 ? (
+                    developerTipsData.tips.map((tip) => (
                     <div key={tip.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-center mb-3">
                         {/* Dynamic icon based on tip type */}
@@ -851,7 +878,21 @@ export default function Dashboard() {
                         <Button variant="link" size="sm" className="text-primary p-0">{tip.actionType}</Button>
                       </div>
                     </div>
-                  ))}
+                  ))) : (
+                    <div className="col-span-3 text-center py-8">
+                      <div className="text-amber-500 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p>No tips available</p>
+                      </div>
+                      <p className="text-muted-foreground">
+                        Unable to generate personalized developer tips at this time.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
