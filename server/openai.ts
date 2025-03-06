@@ -7,7 +7,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export interface ChatMessage {
+export interface OpenAIChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
 }
@@ -25,7 +25,7 @@ export interface StreamingContext {
  * @returns The AI's response
  */
 export async function getChatCompletion(
-  messages: ChatMessage[],
+  messages: OpenAIChatMessage[],
 ): Promise<string> {
   try {
     console.log(
@@ -49,7 +49,7 @@ export async function getChatCompletion(
 
 // New function for streaming chat completions
 export async function getChatCompletionStream(
-  messages: ChatMessage[],
+  messages: OpenAIChatMessage[],
   res: any,
   streamingContext?: StreamingContext
 ): Promise<void> {

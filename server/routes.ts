@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { getChatCompletion, getChatCompletionStream, type ChatMessage as OpenAIChatMessage } from "./openai";
+import { getChatCompletion, getChatCompletionStream, type OpenAIChatMessage } from "./openai";
 import { insertChatSessionSchema, insertChatMessageSchema, type ChatMessage } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
