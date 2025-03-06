@@ -242,7 +242,7 @@ export default function ChatInterface() {
         ...prev,
         {
           id: newMessageId,
-          sender: 'ai',
+          sender: 'ai' as const,
           content: '',
           timestamp: new Date().toLocaleTimeString(),
           html: ''
