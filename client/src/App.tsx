@@ -40,15 +40,15 @@ function App() {
             </Route>
             
             <Route path="/dashboard">
-              <ProtectedRoute path="/dashboard" component={Dashboard} />
+              <Dashboard />
             </Route>
             
             <Route path="/chat">
-              <ProtectedRoute path="/chat" component={ChatInterface} />
+              <ChatInterface />
             </Route>
             
             <Route path="/learning">
-              <ProtectedRoute path="/learning" component={LearningProgress} />
+              <LearningProgress />
             </Route>
             
             <Route path="/keypress-test">
