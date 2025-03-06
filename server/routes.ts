@@ -37,6 +37,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: string;
         tags: string[];
         sessionId: number;
+        conversation?: {
+          id: number;
+          sender: 'user' | 'ai';
+          content: string;
+          timestamp: string;
+        }[];
       }
       
       let recentQueriesData: RecentQueryData[] = [];
@@ -99,15 +105,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return tags;
           };
           
+          // Create formatted conversation array for frontend display
+          const formattedConversation = messages.map(msg => ({
+            id: msg.id,
+            sender: msg.sender as 'user' | 'ai',
+            content: msg.content,
+            timestamp: new Date(msg.timestamp).toLocaleTimeString()
+          }));
+
+          // Create a combined full content string with all messages
+          const fullContentString = messages.map(msg => 
+            `${msg.sender.toUpperCase()}: ${msg.content}`
+          ).join('\n\n');
+          
           recentQueriesData.push({
             id: session.id,
             query: firstUserMessage.content.length > 50 
               ? firstUserMessage.content.substring(0, 50) + '...' 
               : firstUserMessage.content,
-            fullContent: firstUserMessage.content,
+            fullContent: fullContentString,
             timestamp: timeAgo,
             tags: generateTags(firstUserMessage.content),
-            sessionId: session.id
+            sessionId: session.id,
+            conversation: formattedConversation
           });
         }
       }
