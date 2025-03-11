@@ -518,186 +518,19 @@ export default function ChatInterface() {
     }
   }, [streamingResponse, isStreaming]);
 
-  // Process code blocks after rendering with improved detection and handling
+  // Process code blocks after rendering with our unified code formatter
   useEffect(() => {
-    // Target specifically code blocks in AI messages
-    const codeElements = document.querySelectorAll('.ai-formatted-message pre code');
-    
-    if (codeElements.length === 0) return;
-    
-    // Function to process code blocks after Prism is loaded
-    const processCodeBlocks = (Prism: any) => {
-      codeElements.forEach((element) => {
-        const codeElement = element as HTMLElement;
-        const preElement = codeElement.parentElement as HTMLElement;
-        
-        // Skip if already processed
-        if (preElement.getAttribute('data-processed') === 'true') {
-          return;
-        }
-        
-        // Mark as processed
-        preElement.setAttribute('data-processed', 'true');
-        
-        try {
-          // Get the code and language
-          const code = codeElement.textContent || '';
-          let language = 'text'; // Default
-          
-          // Try to determine language from class (e.g., "language-python")
-          codeElement.classList.forEach(className => {
-            if (className.startsWith('language-')) {
-              language = className.replace('language-', '');
-            }
-          });
-          
-          // Create a wrapper for our enhanced code block
-          const containerDiv = document.createElement('div');
-          containerDiv.className = 'code-container my-4 rounded-md overflow-hidden border shadow-md';
-          containerDiv.style.borderColor = 'var(--tab-border, #333333)';
-          
-          // Create header with language info and copy button
-          const headerDiv = document.createElement('div');
-          headerDiv.className = 'flex items-center justify-between px-4 py-2 text-xs border-b';
-          headerDiv.style.backgroundColor = 'var(--sidebar-bg, #1e1e1e)';
-          headerDiv.style.color = 'var(--code-fg, #d4d4d4)';
-          headerDiv.style.borderColor = 'var(--tab-border, #333333)';
-          
-          // Left side with language info
-          const langDiv = document.createElement('div');
-          langDiv.className = 'flex items-center gap-2';
-          langDiv.innerHTML = `
-            <span class="flex space-x-1">
-              <span class="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
-              <span class="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
-              <span class="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
-            </span>
-            <span class="font-semibold text-xs" style="color: var(--syntax-constant, #569CD6);">${language}</span>
-          `;
-          
-          // Copy button
-          const copyButton = document.createElement('button');
-          copyButton.className = 'transition-all px-2 py-1 rounded-md flex items-center gap-1 bg-gray-700/60 text-gray-100 hover:bg-gray-600';
-          copyButton.style.color = 'var(--gray-200, #e5e7eb)';
-          copyButton.title = 'Copy to clipboard';
-          copyButton.innerHTML = `
-            <span class="text-xs">Copy</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          `;
-          
-          // Add copy functionality
-          copyButton.addEventListener('click', () => {
-            navigator.clipboard.writeText(code);
-            const originalInnerHTML = copyButton.innerHTML;
-            copyButton.innerHTML = `
-              <span class="text-xs">Copied!</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 6 9 17l-5-5"></path>
-              </svg>
-            `;
-            copyButton.style.backgroundColor = 'var(--green-600, #16a34a)';
-            copyButton.style.color = 'var(--white, #ffffff)';
-            setTimeout(() => {
-              copyButton.innerHTML = originalInnerHTML;
-              copyButton.style.backgroundColor = 'var(--gray-700-60, rgba(55, 65, 81, 0.6))';
-              copyButton.style.color = 'var(--gray-200, #e5e7eb)';
-            }, 1500);
-          });
-          
-          // Add elements to header
-          headerDiv.appendChild(langDiv);
-          headerDiv.appendChild(copyButton);
-          
-          // Style the pre element
-          preElement.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
-          preElement.style.color = 'var(--code-fg, #d4d4d4)';
-          preElement.style.margin = '0';
-          preElement.style.padding = '1rem';
-          preElement.style.borderRadius = '0';
-          preElement.style.overflow = 'auto';
-          
-          // Create footer
-          const footerDiv = document.createElement('div');
-          footerDiv.className = 'px-4 py-1 text-xs border-t flex justify-between';
-          footerDiv.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
-          footerDiv.style.color = 'var(--syntax-comment, #6A9955)';
-          footerDiv.style.borderColor = 'var(--tab-border, #333333)';
-          footerDiv.innerHTML = `
-            <span>// AI Code Buddy</span>
-            <span>${new Date().toLocaleDateString()}</span>
-          `;
-          
-          // Get the parent of the pre element
-          const parentElement = preElement.parentElement;
-          if (parentElement) {
-            // Create our container structure
-            containerDiv.appendChild(headerDiv);
-            
-            // Clone the pre to avoid DOM manipulation issues
-            const preClone = preElement.cloneNode(true) as HTMLElement;
-            containerDiv.appendChild(preClone);
-            containerDiv.appendChild(footerDiv);
-            
-            // Replace the original pre with our enhanced container
-            parentElement.replaceChild(containerDiv, preElement);
-            
-            // Highlight the code
-            const newCodeElement = preClone.querySelector('code');
-            if (newCodeElement) {
-              try {
-                Prism.highlightElement(newCodeElement);
-              } catch (error) {
-                console.warn('Error highlighting code element:', error);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error enhancing code block:', error);
-        }
-      });
-    };
-    
-    // Load Prism and all needed language components
-    const loadPrism = async () => {
-      try {
-        const Prism = await import('prismjs');
-        
-        // Load commonly used languages in parallel
-        await Promise.all([
-          import('prismjs/components/prism-javascript'),
-          import('prismjs/components/prism-jsx'),
-          import('prismjs/components/prism-typescript'),
-          import('prismjs/components/prism-tsx'),
-          import('prismjs/components/prism-css'),
-          import('prismjs/components/prism-python'),
-          import('prismjs/components/prism-java'),
-          import('prismjs/components/prism-csharp'),
-          import('prismjs/components/prism-json'),
-          import('prismjs/components/prism-bash'),
-          import('prismjs/components/prism-markdown'),
-          import('prismjs/components/prism-sql'),
-          import('prismjs/components/prism-php'),
-          import('prismjs/components/prism-ruby'),
-        ]);
-        
-        // Process code blocks
-        processCodeBlocks(Prism.default);
-      } catch (error) {
-        console.error('Error loading Prism or languages:', error);
-      }
-    };
-    
-    // Run with a slight delay to ensure DOM is fully updated
-    const timeoutId = setTimeout(() => {
-      loadPrism();
-    }, 100);
-    
-    return () => clearTimeout(timeoutId);
+    // Import dynamically to avoid issues with SSR
+    import('@/lib/code-formatter').then(({ enhanceCodeBlocks }) => {
+      // Small delay to ensure DOM is fully rendered
+      const timeoutId = setTimeout(() => {
+        enhanceCodeBlocks('.ai-formatted-message');
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }).catch(error => {
+      console.error('Error loading code formatter:', error);
+    });
   }, [messages, streamingResponse]); // Run when messages or streaming content changes
 
   return (
