@@ -13,6 +13,7 @@ import * as DOMPurify from 'isomorphic-dompurify';
 import 'prismjs/themes/prism-okaidia.css'; // Dark theme with vibrant colors
 import MessageInput from "../chat/MessageInput";
 import MessageList from "../chat/MessageList";
+import { useCodeHighlighting } from "@/hooks/use-code-highlighting";
 
 interface Message {
   id: number;
@@ -381,6 +382,9 @@ export default function PerformanceOptimization() {
     return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
 
+  // Apply code highlighting whenever messages change
+  useCodeHighlighting([messages]);
+  
   // Toggle streaming mode
   const toggleStreaming = () => {
     setUseStreaming(!useStreaming);
