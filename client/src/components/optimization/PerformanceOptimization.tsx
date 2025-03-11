@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import OptimizationHeader from "./OptimizationHeader";
+import Header from "../layout/Header";
 import { useTheme } from "@/hooks/use-theme";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -404,6 +405,7 @@ export default function PerformanceOptimization() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Header />
       <OptimizationHeader toggleStreaming={toggleStreaming} useStreaming={useStreaming} />
       
       <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-4">
