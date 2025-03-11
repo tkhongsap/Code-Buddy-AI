@@ -56,6 +56,11 @@ function App() {
               <PerformanceOptimization />
             </Route>
             
+            {/* Add redirect for alternate route */}
+            <Route path="/optimize">
+              <PerformanceOptimization />
+            </Route>
+            
             <Route path="/keypress-test">
               <KeypressTestPage />
             </Route>
