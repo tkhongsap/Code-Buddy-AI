@@ -395,8 +395,18 @@ export default function PerformanceOptimization() {
       <OptimizationHeader toggleStreaming={toggleStreaming} useStreaming={useStreaming} />
       
       <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-4">
-        <div className="text-2xl font-bold mb-4">Performance & Security Optimizer</div>
-        <Card className="flex-1 flex flex-col">
+        <div className="flex items-center mb-4">
+          <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center text-white mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 14-4 4v-6h2" />
+              <path d="M15 13v2" />
+              <path d="M18 15v5" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold">Performance & Security Optimizer</h1>
+        </div>
+        
+        <Card className="flex-1 flex flex-col shadow-md border-primary/10">
           <MessageList 
             messages={messages} 
             isTyping={isTyping} 
