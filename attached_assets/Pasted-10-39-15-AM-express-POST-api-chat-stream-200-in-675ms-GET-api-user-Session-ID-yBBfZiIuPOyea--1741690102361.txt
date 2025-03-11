@@ -1,0 +1,153 @@
+10:39:15 AM [express] POST /api/chat/stream 200 in 675ms
+GET /api/user - Session ID: yBBfZiIuPOyea_JlPok_8vUzlFFv94-P
+Passport authenticated: false
+Session authenticated: true
+User ID in custom session: 1
+10:43:20 AM [express] GET /api/user 304 in 565ms :: {"id":1,"username":"demo","password":"7f1e21f2561…
+GET /api/user - Session ID: yBBfZiIuPOyea_JlPok_8vUzlFFv94-P
+Passport authenticated: false
+Session authenticated: true
+User ID in custom session: 1
+10:43:21 AM [express] GET /api/user 304 in 179ms :: {"id":1,"username":"demo","password":"7f1e21f2561…
+Using OpenAI API key for streaming: Key is not set
+Error in streaming OpenAI API: AuthenticationError: 401 Incorrect API key provided: sk-proj-********************************************************************************************************JfHZ. You can find your API key at https://platform.openai.com/account/api-keys.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:76:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async getChatCompletionStream (/home/runner/workspace/server/openai.ts:68:20)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:633:7) {
+  status: 401,
+  headers: {
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91ea73a22e63e1d7-ORD',
+    connection: 'keep-alive',
+    'content-length': '366',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Tue, 11 Mar 2025 10:43:35 GMT',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=XQ1oxwJtH5oQsVSIJw1G1NZQDXulFO8uIDZe6L51KWo-1741689815-1.0.1.1-Ms0GM.9sb30SH2_ot2oPAG1YBNR1XsiscQZlwsznGySikV2AvuaxTIsGpcQGtK8gXyKptDuhh35MFCRe__7HhgGZCHvSBnceTWhhRbYXm.A; path=/; expires=Tue, 11-Mar-25 11:13:35 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=HeOOAVvjAMSIv9tFFoDITdcD1IRYOjtn51DLd12kDMs-1741689815458-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    vary: 'Origin',
+    'x-content-type-options': 'nosniff',
+    'x-request-id': 'req_f05a963528fcc527babaace0f5dde07e'
+  },
+  request_id: 'req_f05a963528fcc527babaace0f5dde07e',
+  error: {
+    message: 'Incorrect API key provided: sk-proj-********************************************************************************************************JfHZ. You can find your API key at https://platform.openai.com/account/api-keys.',
+    type: 'invalid_request_error',
+    param: null,
+    code: 'invalid_api_key'
+  },
+  code: 'invalid_api_key',
+  param: null,
+  type: 'invalid_request_error'
+}
+10:43:35 AM [express] POST /api/chat/stream 200 in 661ms
+PG Pool error: error: terminating connection due to administrator command
+    at Parser.parseErrorMessage (/home/runner/workspace/node_modules/pg-protocol/src/parser.ts:368:69)
+    at Parser.handlePacket (/home/runner/workspace/node_modules/pg-protocol/src/parser.ts:187:21)
+    at Parser.parse (/home/runner/workspace/node_modules/pg-protocol/src/parser.ts:102:30)
+    at TLSSocket.<anonymous> (/home/runner/workspace/node_modules/pg-protocol/src/index.ts:7:48)
+    at TLSSocket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+  length: 116,
+  severity: 'FATAL',
+  code: '57P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'postgres.c',
+  line: '3289',
+  routine: 'ProcessInterrupts',
+  client: Client {
+    _events: [Object: null prototype] { error: [Function (anonymous)] },
+    _eventsCount: 1,
+    _maxListeners: undefined,
+    connectionParameters: ConnectionParameters {
+      user: 'neondb_owner',
+      database: 'neondb',
+      port: 5432,
+      host: 'ep-gentle-thunder-a60lahx3.us-west-2.aws.neon.tech',
+      binary: false,
+      options: undefined,
+      ssl: {},
+      client_encoding: '',
+      replication: undefined,
+      isDomainSocket: false,
+      application_name: undefined,
+      fallback_application_name: undefined,
+      statement_timeout: false,
+      lock_timeout: false,
+      idle_in_transaction_session_timeout: false,
+      query_timeout: false,
+      connect_timeout: 0
+    },
+    user: 'neondb_owner',
+    database: 'neondb',
+    port: 5432,
+    host: 'ep-gentle-thunder-a60lahx3.us-west-2.aws.neon.tech',
+    replication: undefined,
+    _Promise: [Function: Promise],
+    _types: TypeOverrides { _types: [Object], text: {}, binary: {} },
+    _ending: true,
+    _ended: false,
+    _connecting: false,
+    _connected: true,
+    _connectionError: false,
+    _queryable: false,
+    connection: Connection {
+      _events: [Object: null prototype],
+      _eventsCount: 23,
+      _maxListeners: undefined,
+      stream: [TLSSocket],
+      _keepAlive: false,
+      _keepAliveInitialDelayMillis: 0,
+      lastBuffer: false,
+      parsedStatements: {},
+      ssl: {},
+      _ending: true,
+      _emitMessage: false,
+      _connecting: true,
+      [Symbol(shapeMode)]: false,
+      [Symbol(kCapture)]: false
+    },
+    queryQueue: [],
+    binary: false,
+    processID: -1685072788,
+    secretKey: 712886773,
+    ssl: {},
+    _connectionTimeoutMillis: 0,
+    _connectionCallback: null,
+    saslSession: null,
+    release: [Function (anonymous)],
+    activeQuery: null,
+    readyForQuery: true,
+    hasExecuted: true,
+    _poolUseCount: 1,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  }
+}
+GET /api/user - Session ID: yBBfZiIuPOyea_JlPok_8vUzlFFv94-P
+Passport authenticated: false
+Session authenticated: true
+User ID in custom session: 1
+10:45:26 AM [express] GET /api/user 304 in 560ms :: {"id":1,"username":"demo","password":"7f1e21f2561…
+GET /api/user - Session ID: yBBfZiIuPOyea_JlPok_8vUzlFFv94-P
+Passport authenticated: false
+Session authenticated: true
+User ID in custom session: 1
+10:45:27 AM [express] GET /api/user 304 in 179ms :: {"id":1,"username":"demo","password":"7f1e21f2561…
