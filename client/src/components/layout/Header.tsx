@@ -154,17 +154,17 @@ export default function Header() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  onClick={() => handleNavigation("/learning")}
-                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
-                >
-                  Learning
-                </Button>
-                <Button 
-                  variant="ghost" 
                   onClick={() => handleNavigation("/optimization")}
                   className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
                 >
                   Optimization
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleNavigation("/learning")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
+                >
+                  Learning
                 </Button>
               </>
             )}
@@ -378,17 +378,17 @@ export default function Header() {
                     </Button>
                     <Button 
                       variant="ghost" 
-                      onClick={() => handleNavigation("/learning")}
-                      className={`justify-start ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
-                    >
-                      Learning
-                    </Button>
-                    <Button 
-                      variant="ghost" 
                       onClick={() => handleNavigation("/optimization")}
                       className={`justify-start ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
                     >
                       Optimization
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleNavigation("/learning")}
+                      className={`justify-start ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
+                    >
+                      Learning
                     </Button>
                     <Button 
                       variant="ghost" 
