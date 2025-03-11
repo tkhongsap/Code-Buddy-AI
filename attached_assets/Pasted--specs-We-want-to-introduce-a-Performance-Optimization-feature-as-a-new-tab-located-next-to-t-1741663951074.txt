@@ -1,0 +1,43 @@
+<specs>
+We want to introduce a **Performance Optimization** feature as a new tab, located next to the existing **AI Chat** tab. The UI will largely reuse the existing chat components and layout, but with a different system prompt focused on optimizing code for performance and security.
+</specs>
+
+<your_task>
+1. **Add a New Tab or Route**  
+   - Create a new tab labeled **"Performance Optimization"** adjacent to the **"AI Chat"** tab.
+   - Use the same general layout as the **AI Chat** feature.
+
+2. **Reuse Existing Chat Components**  
+   - Leverage the current chat interface (input box, chat history, response rendering) for consistency.
+   - Maintain styling and responsiveness across desktop and mobile.
+
+3. **Implement a New System Prompt**  
+   - Replace the existing system prompt with one that instructs the AI to:
+     - Focus on **performance** and **security** optimizations.
+     - Provide **detailed suggestions** for refactoring or enhancing the code.
+     - Give **practical examples** of improvements (e.g., time complexity, memory usage, safe coding practices).
+
+4. **Code Input & Response Flow**  
+   - Allow the user to **paste or upload their code** in the chat.
+   - The AI should respond with **specific recommendations** for making the code more efficient and secure.
+   - Encourage the AI to explain each recommendation clearly (e.g., “Reducing time complexity by switching from O(n^2) to O(n) approach.”).
+
+5. **UI Consistency**  
+   - Maintain the **existing design language** (color scheme, typography, spacing).
+   - Ensure the new tab fits naturally within the navigation structure.
+   - Provide a clear heading or title, e.g., **“Performance & Security Optimizer”** within the chat window.
+
+6. **Testing & Validation**  
+   - Verify the new tab behaves as expected (loads the correct system prompt, displays messages correctly).
+   - Test various code snippets (front-end, back-end, algorithms) to ensure relevant optimization advice is returned.
+   - Ensure that the tab remains **accessible** and **responsive**.
+
+</your_task>
+
+<rules>
+- **Use React** (TypeScript if the project is already configured) for the front-end.
+- **Keep the existing chat structure** (header, messages, input) to reduce development time.
+- **Only change the system prompt** for the new feature; do not alter the existing AI Chat prompt.
+- **Focus on performance and security** in the new system prompt.
+- **Maintain accessibility** best practices (ARIA labels, keyboard navigation).
+</rules>
