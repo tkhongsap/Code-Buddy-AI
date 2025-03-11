@@ -157,7 +157,7 @@ export default function Header() {
                   onClick={() => handleNavigation("/optimization")}
                   className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
                 >
-                  Optimization
+                  Optimize Your Code
                 </Button>
                 <Button 
                   variant="ghost" 
