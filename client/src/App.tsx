@@ -10,6 +10,7 @@ import ChatInterface from "./components/chat/ChatInterface";
 import SimpleChat from "./components/SimpleChat";
 import LearningProgress from "./components/learning/LearningProgress";
 import KeypressTestPage from "./KeypressTestPage";
+import PerformanceOptimization from "./components/optimization/PerformanceOptimization";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";
@@ -49,6 +50,10 @@ function App() {
             
             <Route path="/learning">
               <LearningProgress />
+            </Route>
+            
+            <Route path="/optimization">
+              <PerformanceOptimization />
             </Route>
             
             <Route path="/keypress-test">

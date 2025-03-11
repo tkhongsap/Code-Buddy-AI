@@ -159,6 +159,13 @@ export default function Header() {
                 >
                   Learning
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleNavigation("/optimization")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
+                >
+                  Optimization
+                </Button>
               </>
             )}
           </nav>
@@ -375,6 +382,13 @@ export default function Header() {
                       className={`justify-start ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
                     >
                       Learning
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleNavigation("/optimization")}
+                      className={`justify-start ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
+                    >
+                      Optimization
                     </Button>
                     <Button 
                       variant="ghost" 
