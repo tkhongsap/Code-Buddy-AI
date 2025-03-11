@@ -150,7 +150,7 @@ export default function Header() {
                   onClick={() => handleNavigation("/chat")}
                   className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/chat" ? "text-primary font-medium" : ""}`}
                 >
-                  AI Chat
+                  Chat
                 </Button>
                 <Button 
                   variant="ghost" 
@@ -374,14 +374,14 @@ export default function Header() {
                       onClick={() => handleNavigation("/chat")}
                       className={`justify-start ${currentPath === "/chat" ? "text-primary font-medium" : ""}`}
                     >
-                      AI Chat
+                      Chat
                     </Button>
                     <Button 
                       variant="ghost" 
                       onClick={() => handleNavigation("/optimization")}
                       className={`justify-start ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
                     >
-                      Optimization
+                      Optimize Your Code
                     </Button>
                     <Button 
                       variant="ghost" 
