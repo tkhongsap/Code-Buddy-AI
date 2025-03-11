@@ -105,37 +105,7 @@ export default function Header() {
         <div className="hidden md:flex items-center justify-between w-full ml-8">
           <nav className="flex items-center space-x-6">
             {!user ? (
-              <>
-                <Button 
-                  variant="ghost" 
-                  onClick={scrollToFeatures}
-                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-                >
-                  Features
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-                >
-                  Pricing
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-foreground/70 hover:text-foreground hover:bg-transparent"
-                >
-                  Docs
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => navigate("/auth")} 
-                  className="text-primary hover:text-primary hover:bg-transparent"
-                >
-                  Log in
-                </Button>
-                <Button onClick={() => navigate("/auth")}>
-                  Get Started
-                </Button>
-              </>
+              <></>
             ) : (
               <>
                 <Button 
@@ -324,42 +294,7 @@ export default function Header() {
             <SheetContent>
               <div className="flex flex-col gap-4 py-4">
                 {!user ? (
-                  <>
-                    <Button 
-                      variant="ghost" 
-                      onClick={scrollToFeatures}
-                      className="justify-start"
-                    >
-                      Features
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start"
-                    >
-                      Pricing
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start"
-                    >
-                      Docs
-                    </Button>
-                    <div className="border-t pt-4 space-y-3">
-                      <Button 
-                        onClick={() => navigate("/auth")} 
-                        variant="outline" 
-                        className="w-full"
-                      >
-                        Log in
-                      </Button>
-                      <Button 
-                        onClick={() => navigate("/auth")} 
-                        className="w-full"
-                      >
-                        Get Started
-                      </Button>
-                    </div>
-                  </>
+                  <></>
                 ) : (
                   <>
                     <Button 
