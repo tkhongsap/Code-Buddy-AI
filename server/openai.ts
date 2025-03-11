@@ -36,7 +36,7 @@ export async function getChatCompletion(
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini", // You can change this to gpt-4 or other models
       messages,
-      temperature: 0.7,
+      temperature: 0.5,
       max_tokens: 1000,
     });
 
@@ -69,7 +69,7 @@ export async function getChatCompletionStream(
       model: "gpt-4o-mini", // You can change this to gpt-4 or other models
       messages,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 4000,
       stream: true,
     });
 

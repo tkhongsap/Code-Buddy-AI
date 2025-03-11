@@ -46,6 +46,7 @@ export default function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [useStreaming, setUseStreaming] = useState(true); // Toggle for streaming responses
   const [streamingResponse, setStreamingResponse] = useState(""); // Current streaming response
+  const [isStreaming, setIsStreaming] = useState(false); // Track if we're currently streaming
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null); // Reference to the EventSource
   
@@ -96,9 +97,6 @@ export default function ChatInterface() {
       // Using a simpler implementation that doesn't rely on custom renderer
       // which avoids TypeScript errors with the marked library typings
       let htmlContent = marked.parse(text);
-      
-      // Apply additional processing for code blocks
-      // We'll rely on the processCodeBlocks function to add syntax highlighting
       
       // Safety: sanitize HTML to prevent XSS attacks
       let sanitizedHtml: string;
@@ -237,6 +235,9 @@ export default function ChatInterface() {
       // Use a more reliable way to generate a unique ID that won't conflict with user message
       const newMessageId = Date.now(); // Use timestamp for uniqueness
       
+      // Set streaming flag to true
+      setIsStreaming(true);
+      
       // Add this placeholder message for AI response
       setMessages(prev => [
         ...prev,
@@ -355,6 +356,7 @@ export default function ChatInterface() {
                 });
                 
                 setIsTyping(false);
+                setIsStreaming(false); // Streaming is complete
               }
             } catch (error) {
               console.error('Error parsing streamed response:', error);
@@ -494,52 +496,89 @@ export default function ChatInterface() {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // If we're streaming, use instant scroll to avoid animation conflicts
+    if (isStreaming) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    } else {
+      // When not streaming (e.g., user sending message or loading complete response), use smooth scroll
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isStreaming]);
+
+  // Additional effect for streaming content - ensures smooth scrolling during streaming
+  useEffect(() => {
+    if (isStreaming) {
+      // Use requestAnimationFrame to optimize the scroll timing
+      const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      };
+      
+      const rafId = requestAnimationFrame(scrollToBottom);
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [streamingResponse, isStreaming]);
 
   // Process code blocks after rendering with improved detection and handling
   useEffect(() => {
-    // Target both standard markdown code elements and our old .code-block elements for backward compatibility
-    const codeElements = document.querySelectorAll('.ai-formatted-message pre code, .code-block');
+    // Target specifically code blocks in AI messages
+    const codeElements = document.querySelectorAll('.ai-formatted-message pre code');
     
     if (codeElements.length === 0) return;
     
     // Function to process code blocks after Prism is loaded
     const processCodeBlocks = (Prism: any) => {
-      codeElements.forEach(element => {
-        // Handle different types of code elements
-        if (element.classList.contains('code-block')) {
-          // Handle our custom code-block divs
-          const language = element.getAttribute('data-language') || 'javascript';
-          const code = element.textContent || '';
+      codeElements.forEach((element) => {
+        const codeElement = element as HTMLElement;
+        const preElement = codeElement.parentElement as HTMLElement;
+        
+        // Skip if already processed
+        if (preElement.getAttribute('data-processed') === 'true') {
+          return;
+        }
+        
+        // Mark as processed
+        preElement.setAttribute('data-processed', 'true');
+        
+        try {
+          // Get the code and language
+          const code = codeElement.textContent || '';
+          let language = 'text'; // Default
           
-          // Skip if already processed
-          if (element.querySelector('pre')) return;
+          // Try to determine language from class (e.g., "language-python")
+          codeElement.classList.forEach(className => {
+            if (className.startsWith('language-')) {
+              language = className.replace('language-', '');
+            }
+          });
           
-          // Clear the block
-          while (element.firstChild) {
-            element.removeChild(element.firstChild);
-          }
+          // Create a wrapper for our enhanced code block
+          const containerDiv = document.createElement('div');
+          containerDiv.className = 'code-container my-4 rounded-md overflow-hidden border shadow-md';
+          containerDiv.style.borderColor = 'var(--tab-border, #333333)';
           
-          // Create new pre and code elements
-          const pre = document.createElement('pre');
-          pre.className = `language-${language}`;
-          const codeEl = document.createElement('code');
-          codeEl.className = `language-${language}`;
-          codeEl.textContent = code;
+          // Create header with language info and copy button
+          const headerDiv = document.createElement('div');
+          headerDiv.className = 'flex items-center justify-between px-4 py-2 text-xs border-b';
+          headerDiv.style.backgroundColor = 'var(--sidebar-bg, #1e1e1e)';
+          headerDiv.style.color = 'var(--code-fg, #d4d4d4)';
+          headerDiv.style.borderColor = 'var(--tab-border, #333333)';
           
-          pre.appendChild(codeEl);
-          element.appendChild(pre);
+          // Left side with language info
+          const langDiv = document.createElement('div');
+          langDiv.className = 'flex items-center gap-2';
+          langDiv.innerHTML = `
+            <span class="flex space-x-1">
+              <span class="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
+              <span class="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
+              <span class="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
+            </span>
+            <span class="font-semibold text-xs" style="color: var(--syntax-constant, #569CD6);">${language}</span>
+          `;
           
-          // Add copy button container
-          const buttonContainer = document.createElement('div');
-          buttonContainer.className = 'copy-button-container';
-          buttonContainer.setAttribute('style', 'position: absolute; top: 0.5rem; right: 0.5rem;');
-          
-          // Create copy button
+          // Copy button
           const copyButton = document.createElement('button');
-          copyButton.className = 'copy-button transition-colors hover:text-white flex items-center gap-1 bg-slate-700 px-2 py-1 rounded-md';
-          copyButton.setAttribute('style', 'color: var(--line-number, #858585);');
+          copyButton.className = 'transition-all px-2 py-1 rounded-md flex items-center gap-1 bg-gray-700/60 text-gray-100 hover:bg-gray-600';
+          copyButton.style.color = 'var(--gray-200, #e5e7eb)';
           copyButton.title = 'Copy to clipboard';
           copyButton.innerHTML = `
             <span class="text-xs">Copy</span>
@@ -561,147 +600,69 @@ export default function ChatInterface() {
                 <path d="M20 6 9 17l-5-5"></path>
               </svg>
             `;
-            copyButton.setAttribute('style', 'color: var(--green-500, #4ade80);');
+            copyButton.style.backgroundColor = 'var(--green-600, #16a34a)';
+            copyButton.style.color = 'var(--white, #ffffff)';
             setTimeout(() => {
               copyButton.innerHTML = originalInnerHTML;
-              copyButton.setAttribute('style', 'color: var(--line-number, #858585);');
+              copyButton.style.backgroundColor = 'var(--gray-700-60, rgba(55, 65, 81, 0.6))';
+              copyButton.style.color = 'var(--gray-200, #e5e7eb)';
             }, 1500);
           });
           
-          buttonContainer.appendChild(copyButton);
-          element.setAttribute('style', 'position: relative;');
-          element.appendChild(buttonContainer);
+          // Add elements to header
+          headerDiv.appendChild(langDiv);
+          headerDiv.appendChild(copyButton);
           
-          // Highlight the code
-          try {
-            Prism.highlightElement(codeEl);
-          } catch (error) {
-            console.warn('Error highlighting code-block:', error);
-          }
-        } else {
-          // Handle standard <code> elements inside <pre> tags that marked.js generates
-          try {
-            // Try to determine language from class (e.g., "language-python")
-            let language = 'text'; // Default to 'text' instead of javascript for better UX
-            element.classList.forEach(className => {
-              if (className.startsWith('language-')) {
-                language = className.replace('language-', '');
-              }
-            });
+          // Style the pre element
+          preElement.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
+          preElement.style.color = 'var(--code-fg, #d4d4d4)';
+          preElement.style.margin = '0';
+          preElement.style.padding = '1rem';
+          preElement.style.borderRadius = '0';
+          preElement.style.overflow = 'auto';
+          
+          // Create footer
+          const footerDiv = document.createElement('div');
+          footerDiv.className = 'px-4 py-1 text-xs border-t flex justify-between';
+          footerDiv.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
+          footerDiv.style.color = 'var(--syntax-comment, #6A9955)';
+          footerDiv.style.borderColor = 'var(--tab-border, #333333)';
+          footerDiv.innerHTML = `
+            <span>// AI Code Buddy</span>
+            <span>${new Date().toLocaleDateString()}</span>
+          `;
+          
+          // Get the parent of the pre element
+          const parentElement = preElement.parentElement;
+          if (parentElement) {
+            // Create our container structure
+            containerDiv.appendChild(headerDiv);
             
-            // Set language class if not already present
-            if (!element.classList.contains(`language-${language}`)) {
-              element.className = `language-${language}`;
-            }
+            // Clone the pre to avoid DOM manipulation issues
+            const preClone = preElement.cloneNode(true) as HTMLElement;
+            containerDiv.appendChild(preClone);
+            containerDiv.appendChild(footerDiv);
             
-            // Style the parent pre element for better appearance
-            const preElement = element.parentElement;
-            if (preElement && preElement.tagName === 'PRE') {
-              preElement.classList.add('code-block-pre');
-              
-              // Create a header for the code block if it doesn't exist
-              if (!preElement.previousElementSibling?.classList.contains('code-header')) {
-                const codeHeader = document.createElement('div');
-                codeHeader.className = 'code-header flex items-center justify-between px-4 py-2 text-xs border-b';
-                codeHeader.style.backgroundColor = 'var(--sidebar-bg, #1e1e1e)';
-                codeHeader.style.color = 'var(--code-fg, #d4d4d4)';
-                codeHeader.style.borderColor = 'var(--tab-border, #333333)';
-                
-                // Language badge
-                const langBadge = document.createElement('div');
-                langBadge.className = 'flex items-center gap-2';
-                langBadge.innerHTML = `
-                  <span class="flex space-x-1">
-                    <span class="h-3 w-3 rounded-full bg-red-500 opacity-75"></span>
-                    <span class="h-3 w-3 rounded-full bg-yellow-500 opacity-75"></span>
-                    <span class="h-3 w-3 rounded-full bg-green-500 opacity-75"></span>
-                  </span>
-                  <span class="font-semibold text-xs" style="color: var(--syntax-constant, #569CD6);">${language}</span>
-                `;
-                
-                // Copy button
-                const copyButton = document.createElement('button');
-                copyButton.className = 'transition-colors hover:text-white flex items-center gap-1';
-                copyButton.style.color = 'var(--line-number, #858585)';
-                copyButton.title = 'Copy to clipboard';
-                copyButton.innerHTML = `
-                  <span class="text-xs">Copy</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                `;
-                
-                // Add copy functionality
-                copyButton.addEventListener('click', () => {
-                  navigator.clipboard.writeText(element.textContent || '');
-                  const originalInnerHTML = copyButton.innerHTML;
-                  copyButton.innerHTML = `
-                    <span class="text-xs">Copied!</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M20 6 9 17l-5-5"></path>
-                    </svg>
-                  `;
-                  copyButton.style.color = 'var(--green-500, #4ade80)';
-                  setTimeout(() => {
-                    copyButton.innerHTML = originalInnerHTML;
-                    copyButton.style.color = 'var(--line-number, #858585)';
-                  }, 1500);
-                });
-                
-                codeHeader.appendChild(langBadge);
-                codeHeader.appendChild(copyButton);
-                
-                // Insert the header before the pre element
-                preElement.parentNode?.insertBefore(codeHeader, preElement);
-                
-                // Also style the pre element
-                preElement.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
-                preElement.style.color = 'var(--code-fg, #d4d4d4)';
-                preElement.style.margin = '0';
-                preElement.style.padding = '1rem';
-                preElement.style.borderRadius = '0';
-                preElement.style.overflow = 'auto';
-                
-                // Add a footer
-                const codeFooter = document.createElement('div');
-                codeFooter.className = 'code-footer px-4 py-1 text-xs border-t flex justify-between';
-                codeFooter.style.backgroundColor = 'var(--editor-bg, #1e1e1e)';
-                codeFooter.style.color = 'var(--syntax-comment, #6A9955)';
-                codeFooter.style.borderColor = 'var(--tab-border, #333333)';
-                codeFooter.innerHTML = `
-                  <span>// AI Code Buddy</span>
-                  <span>${new Date().toLocaleDateString()}</span>
-                `;
-                
-                // Insert footer after pre element
-                preElement.parentNode?.insertBefore(codeFooter, preElement.nextSibling);
-                
-                // Wrap the components in a container
-                const codeContainer = document.createElement('div');
-                codeContainer.className = 'code-container my-4 rounded-md overflow-hidden border shadow-md';
-                codeContainer.style.borderColor = 'var(--tab-border, #333333)';
-                
-                // Move elements into container
-                preElement.parentNode?.insertBefore(codeContainer, codeHeader);
-                codeContainer.appendChild(codeHeader);
-                codeContainer.appendChild(preElement);
-                codeContainer.appendChild(codeFooter);
+            // Replace the original pre with our enhanced container
+            parentElement.replaceChild(containerDiv, preElement);
+            
+            // Highlight the code
+            const newCodeElement = preClone.querySelector('code');
+            if (newCodeElement) {
+              try {
+                Prism.highlightElement(newCodeElement);
+              } catch (error) {
+                console.warn('Error highlighting code element:', error);
               }
             }
-            
-            // Highlight with Prism
-            Prism.highlightElement(element);
-          } catch (error) {
-            console.warn('Error processing code element:', error);
           }
+        } catch (error) {
+          console.error('Error enhancing code block:', error);
         }
       });
     };
     
-    // Load Prism and all needed language components once
+    // Load Prism and all needed language components
     const loadPrism = async () => {
       try {
         const Prism = await import('prismjs');
@@ -724,15 +685,20 @@ export default function ChatInterface() {
           import('prismjs/components/prism-ruby'),
         ]);
         
-        // Process all code blocks
+        // Process code blocks
         processCodeBlocks(Prism.default);
       } catch (error) {
         console.error('Error loading Prism or languages:', error);
       }
     };
     
-    loadPrism();
-  }, [messages]);
+    // Run with a slight delay to ensure DOM is fully updated
+    const timeoutId = setTimeout(() => {
+      loadPrism();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages, streamingResponse]); // Run when messages or streaming content changes
 
   return (
     <div className="min-h-screen flex flex-col">
