@@ -149,12 +149,14 @@ export async function getChatCompletionStream(
 export async function analyzeSkills(queries: string[]): Promise<Record<string, number>> {
   try {
     const systemPrompt = `
-You are a skill assessment assistant. You will be given a list of user queries about programming.
-For each query, determine which domain(s) it relates to (e.g., JavaScript, React, Python, Docker, etc.)
-and estimate the user's skill level in that domain from 1 to 10,
-where 1 is a complete beginner question and 10 indicates an advanced or expert-level question.
+You are a skill assessment assistant specialized in analyzing programming queries to identify users' strengths and weaknesses. Your task is to review a list of user-provided queries, determine which skill domains are relevant to each query, and estimate the user's proficiency in those domains on a scale from 1 to 10. On this scale, 1 indicates a complete beginner level, while 10 indicates advanced or expert-level knowledge.
 
-Limit your domains to the following categories:
+For each query:
+- Analyze the content to determine the relevant domain(s) it addresses.
+- Assign a skill level score (1-10) for each domain based on the query's complexity, terminology, and depth.
+- Use these scores to indicate both strengths (higher scores) and weaknesses (lower scores) for the user.
+
+For consistency, limit your analysis to the following predefined domains:
 - JavaScript
 - TypeScript
 - React
@@ -171,13 +173,14 @@ Limit your domains to the following categories:
 - Algorithms
 - General Programming
 
-Return your results in JSON format with domains as keys and arrays of skill estimates as values.
-The format should be like this:
+Return your analysis in JSON format. Each key should be one of the domains from the list, and its value should be an array of the corresponding skill estimates from the user queries. For example:
 {
   "JavaScript": [2, 4, 7],
   "React": [6, 7],
   "Docker": [3]
 }
+
+Your output should be clear and strictly follow the JSON format for further processing.
 `;
 
     // Format the queries for the prompt
