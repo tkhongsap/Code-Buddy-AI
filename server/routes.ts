@@ -977,7 +977,7 @@ The tips should be valuable, specific to the technologies discussed, and help th
     }
   });
 
-  // Code scoring endpoint
+  // Code scoring endpoint - basic version for non-streaming responses
   app.post("/api/code/score", async (req, res) => {
     // Check both Passport and custom session authentication
     const isAuthenticated =
@@ -1001,13 +1001,26 @@ The tips should be valuable, specific to the technologies discussed, and help th
       const messages: OpenAIChatMessage[] = [
         {
           role: "system",
-          content: `You are a code analysis expert who evaluates code quality and provides constructive feedback.
-          
-Your task is to analyze the code snippet or query provided by the user and provide:
-1. A numerical score on a scale of 0-10, where 0 is very poor and 10 is excellent
-2. A paragraph of feedback explaining the score and overall assessment
-3. 3-5 bullet points of strengths in the code
-4. 3-5 bullet points of areas for improvement
+          content: `You are a senior software engineer tasked with performing a detailed code review.
+
+Please evaluate the technical quality of the code across these dimensions (each scored 1-10):
+1. Correctness 
+2. Code Quality
+3. Performance Impact
+4. Security Implications
+5. Consistency with Visible Code Style
+6. Potential Impact on System Extensibility 
+7. Error Handling
+
+Follow the scoring reference (1-4: major issues, 5-7: moderate issues, 8-10: good to excellent).
+For each dimension, provide:
+• Score: X/10
+• Explanation: a brief summary of findings
+• Improvement Suggestion(s)
+
+Additionally, if applicable, include a short code recommendation or snippet that can directly improve the code.
+
+Finally, provide an Overall Score: X.XX/10, and a concise list of key improvement items.
 
 Format your response as a JSON object with the following structure:
 {
@@ -1015,9 +1028,7 @@ Format your response as a JSON object with the following structure:
   "feedback": "overall feedback paragraph",
   "strengths": ["strength 1", "strength 2", ...],
   "improvements": ["improvement 1", "improvement 2", ...]
-}
-
-Be fair and constructive in your evaluation. If the user has provided a coding question instead of code, evaluate the clarity and specificity of their question.`,
+}`,
         },
         {
           role: "user",
@@ -1114,6 +1125,79 @@ Be fair and constructive in your evaluation. If the user has provided a coding q
         feedback: "An error occurred while analyzing your code.",
         strengths: [],
         improvements: [],
+      });
+    }
+  });
+
+  // Code scoring streaming endpoint
+  app.post("/api/code/score/stream", async (req, res) => {
+    // Check both Passport and custom session authentication
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
+
+    try {
+      // Validate request body
+      const codeSchema = z.object({
+        code: z.string().min(1, "Code is required"),
+      });
+
+      const parseResult = codeSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+
+      const { code } = parseResult.data;
+      
+      // Get user ID (if authenticated)
+      const userId = req.isAuthenticated() ? (req.user as any).id : (req.session as any).userId || 1;
+
+      // Create a prompt for OpenAI
+      const messages: OpenAIChatMessage[] = [
+        {
+          role: "system",
+          content: `You are a senior software engineer tasked with performing a detailed code review.
+
+Please evaluate the technical quality of the code across these dimensions (each scored 1-10):
+1. Correctness 
+2. Code Quality
+3. Performance Impact
+4. Security Implications
+5. Consistency with Visible Code Style
+6. Potential Impact on System Extensibility 
+7. Error Handling
+
+Follow the scoring reference (1-4: major issues, 5-7: moderate issues, 8-10: good to excellent).
+For each dimension, provide:
+• Score: X/10
+• Explanation: a brief summary of findings
+• Improvement Suggestion(s)
+
+Additionally, if applicable, include a short code recommendation or snippet that can directly improve the code.
+
+Finally, provide an Overall Score: X.XX/10, and a concise list of key improvement items.
+
+Format your response as a JSON object with the following structure:
+{
+  "score": number between 0-10,
+  "feedback": "overall feedback paragraph",
+  "strengths": ["strength 1", "strength 2", ...],
+  "improvements": ["improvement 1", "improvement 2", ...]
+}`
+        },
+        {
+          role: "user",
+          content: `Please evaluate this code and provide a quality score:\n\n${code}`,
+        },
+      ];
+      
+      // Process as a streaming response
+      await getChatCompletionStream(messages, res);
+    } catch (error) {
+      console.error("Error processing code scoring stream:", error);
+      res.status(500).json({
+        error: "Failed to process code for scoring",
+        done: true
       });
     }
   });

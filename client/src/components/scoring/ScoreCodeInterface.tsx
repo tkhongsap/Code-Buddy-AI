@@ -88,15 +88,35 @@ export default function ScoreCodeInterface() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { message: string; conversationHistory: Message[] }) => {
-      // Call the existing chat API endpoint but pass a flag to identify code scoring
-      const response = await apiRequest("POST", "/api/chat", {
-        message: messageData.message,
-        conversationHistory: messageData.conversationHistory,
-        isScoreRequest: true
+      // Call the dedicated code scoring API endpoint
+      const response = await apiRequest("POST", "/api/code/score", {
+        code: messageData.message
       });
       
-      const data = await response.json();
-      return data.response;
+      // Format the score response as readable text
+      try {
+        const scoreData = await response.json();
+        
+        // Format the score data as a markdown response
+        let formattedResponse = `## Code Score: ${scoreData.score}/10\n\n`;
+        formattedResponse += `### Feedback\n${scoreData.feedback}\n\n`;
+        
+        formattedResponse += "### Strengths\n";
+        scoreData.strengths.forEach((strength: string) => {
+          formattedResponse += `- ${strength}\n`;
+        });
+        formattedResponse += "\n";
+        
+        formattedResponse += "### Areas for Improvement\n";
+        scoreData.improvements.forEach((improvement: string) => {
+          formattedResponse += `- ${improvement}\n`;
+        });
+        
+        return formattedResponse;
+      } catch (error) {
+        console.error("Error formatting score data:", error);
+        return "Error processing code score. Please try again.";
+      }
     },
     onSuccess: (response, variables) => {
       setMessages(prev => [
@@ -202,18 +222,15 @@ export default function ScoreCodeInterface() {
       // Reset streaming response
       setStreamingResponse('');
       
-      // Create POST request body - explicitly filtering out the message we just added
-      // and only sending prior messages as conversation history
+      // Create POST request body with the code to score
       const requestBody = JSON.stringify({
-        message: userQuestion,
-        conversationHistory: conversationHistory,
-        isScoreRequest: true
+        code: userQuestion
       });
       
       // Use EventSource for streaming response
       // For browsers that don't support native EventSource with POST
       // we handle it manually with fetch and event parsing
-      const response = await fetch('/api/chat/stream', {
+      const response = await fetch('/api/code/score/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
