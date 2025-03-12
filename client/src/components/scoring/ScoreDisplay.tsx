@@ -54,7 +54,9 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
             <Progress 
               value={score * 10} 
               className="h-2"
-              indicatorClassName={getProgressColor(score)}
+              style={{
+                '--progress-foreground': getProgressColor(score),
+              } as React.CSSProperties}
             />
           </div>
           <div className="text-sm text-muted-foreground mb-6">

@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 interface CodeInputProps {
   code: string;
@@ -15,47 +17,41 @@ export default function CodeInput({
   submitCode, 
   isProcessing 
 }: CodeInputProps) {
-  const [rows, setRows] = useState(10);
-
-  // Adjust textarea height based on content
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCode(e.target.value);
-    
-    // Count number of lines
-    const lineCount = e.target.value.split('\n').length;
-    // Set minimum of 10 rows, max of 20
-    setRows(Math.max(10, Math.min(20, lineCount)));
-  };
-
   return (
-    <form onSubmit={submitCode} className="space-y-4">
-      <div className="relative">
-        <Textarea
-          value={code}
-          onChange={handleInput}
-          placeholder="Paste your code here or enter a coding question..."
-          className="resize-none font-mono text-sm h-auto min-h-[200px] p-4"
-          rows={rows}
-          disabled={isProcessing}
-        />
-      </div>
-      
-      <div className="flex justify-end">
-        <Button 
-          type="submit" 
-          disabled={code.trim() === '' || isProcessing}
-          className="px-6"
-        >
-          {isProcessing ? (
-            <div className="flex items-center">
-              <span className="mr-2">Processing</span>
-              <div className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            "Score Code"
-          )}
-        </Button>
-      </div>
-    </form>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Paste Your Code</CardTitle>
+        <CardDescription>
+          Our AI will analyze your code and provide quality feedback
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submitCode} className="space-y-4">
+          <Textarea
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Paste your code or type a coding question here..."
+            className="min-h-[300px] font-mono text-sm resize-y"
+            disabled={isProcessing}
+          />
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              disabled={isProcessing || !code.trim()} 
+              className="w-full sm:w-auto"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                'Score My Code'
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
