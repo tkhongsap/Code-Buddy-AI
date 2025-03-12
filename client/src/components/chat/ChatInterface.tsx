@@ -1,20 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import Header from "../layout/Header";
-import { CodeBlock } from "../ui/code-block";
 import { useTheme } from "@/hooks/use-theme";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { mockSavedResponses } from "@/lib/mock-data";
 import { marked } from 'marked';
 import * as DOMPurify from 'isomorphic-dompurify';
 import 'prismjs/themes/prism-okaidia.css'; // Dark theme with vibrant colors
 import MessageInput from "./MessageInput";
+import MessageList from "./MessageList";
 
 interface Message {
   id: number;
@@ -22,13 +20,6 @@ interface Message {
   content: string;
   timestamp: string;
   html?: string;
-}
-
-interface SavedResponse {
-  id: number;
-  content: string;
-  timestamp: string;
-  question: string;
 }
 
 export default function ChatInterface() {
@@ -50,34 +41,6 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null); // Reference to the EventSource
   
-  // Fetch chat sessions
-  const { data: chatSessions = [], refetch: refetchChatSessions } = useQuery<any[]>({
-    queryKey: ["/api/chat-sessions"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "/api/chat-sessions");
-        return await response.json();
-      } catch (error) {
-        console.error("Error fetching chat sessions:", error);
-        return [];
-      }
-    },
-    // Disable for now until authentication is enabled
-    enabled: false
-  });
-  
-  // Fetch saved responses
-  const { data: savedResponses = [], refetch: refetchSavedResponses } = useQuery<SavedResponse[]>({
-    queryKey: ["/api/saved-responses"],
-    queryFn: async () => {
-      // In a real implementation, this would fetch from the API
-      return mockSavedResponses;
-    },
-  });
-  
-  // Active chat session state
-  const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
-
   // Configure Marked options with simpler approach
   useEffect(() => {
     try {
@@ -127,19 +90,10 @@ export default function ChatInterface() {
       // Call the real API endpoint
       const response = await apiRequest("POST", "/api/chat", {
         message: messageData.message,
-        conversationHistory: messageData.conversationHistory,
-        sessionId: currentSessionId
+        conversationHistory: messageData.conversationHistory
       });
       
       const data = await response.json();
-      
-      // If this created a new session, update our session ID
-      if (data.sessionId && currentSessionId === null) {
-        setCurrentSessionId(data.sessionId);
-        // Refresh sessions list
-        refetchChatSessions();
-      }
-      
       return data.response;
     },
     onSuccess: (response, variables) => {
@@ -175,37 +129,6 @@ export default function ChatInterface() {
           timestamp: new Date().toLocaleTimeString()
         }
       ]);
-    }
-  });
-
-  // Save response mutation
-  const saveResponseMutation = useMutation({
-    mutationFn: async (messageId: number) => {
-      const message = messages.find(m => m.id === messageId);
-      if (!message || message.sender !== 'ai') return;
-      
-      const questionMessage = messages.find(m => m.id === messageId - 1);
-      
-      // In a real implementation, this would send to the API
-      const savedResponse: SavedResponse = {
-        id: Date.now(),
-        content: message.content,
-        timestamp: new Date().toLocaleString(),
-        question: questionMessage?.content || 'Unknown question'
-      };
-      
-      // Mock API call
-      return new Promise<SavedResponse>((resolve) => {
-        setTimeout(() => resolve(savedResponse), 300);
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Response saved to your collection",
-        variant: "default",
-      });
-      refetchSavedResponses();
     }
   });
 
@@ -257,8 +180,7 @@ export default function ChatInterface() {
       // and only sending prior messages as conversation history
       const requestBody = JSON.stringify({
         message: userQuestion,
-        conversationHistory: conversationHistory,
-        sessionId: currentSessionId
+        conversationHistory: conversationHistory
       });
       
       // Use EventSource for streaming response
@@ -440,83 +362,25 @@ export default function ChatInterface() {
     }
   };
 
+  // Save response function for MessageList component
   const saveResponse = (messageId: number) => {
-    saveResponseMutation.mutate(messageId);
+    toast({
+      title: "Feature Notice",
+      description: "Saving responses is coming soon!",
+      variant: "default",
+    });
   };
-  
-  // Load chat session
-  const loadChatSession = async (sessionId: number) => {
-    try {
-      setCurrentSessionId(sessionId);
-      
-      // Fetch messages for this session
-      const response = await apiRequest("GET", `/api/chat-sessions/${sessionId}/messages`);
-      const messagesData = await response.json();
-      
-      // Convert backend messages to UI format
-      const formattedMessages: Message[] = messagesData.map((msg: any, index: number) => ({
-        id: Date.now() + index, // Timestamp + index for uniqueness
-        sender: msg.role === 'user' ? ('user' as const) : ('ai' as const),
-        content: msg.content,
-        timestamp: new Date(msg.timestamp || Date.now()).toLocaleTimeString(),
-        html: msg.role === 'assistant' ? formatAIResponse(msg.content) : undefined
-      }));
-      
-      // Add default welcome message if empty
-      if (formattedMessages.length === 0) {
-        formattedMessages.push({
-          id: Date.now(), // Timestamp for uniqueness
-          sender: 'ai' as const,
-          content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
-          timestamp: new Date().toLocaleTimeString()
-        });
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
-      
-      setMessages(formattedMessages);
-    } catch (error) {
-      console.error("Error loading chat session:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load chat session. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Create new chat session
-  const createNewSession = () => {
-    setCurrentSessionId(null);
-    setMessages([{
-      id: Date.now(), // Use timestamp for uniqueness
-      sender: 'ai' as const,
-      content: 'Hi there! I\'m your AI Code Buddy. How can I help with your coding challenges today?',
-      timestamp: new Date().toLocaleTimeString()
-    }]);
-  };
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    // If we're streaming, use instant scroll to avoid animation conflicts
-    if (isStreaming) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    } else {
-      // When not streaming (e.g., user sending message or loading complete response), use smooth scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isStreaming]);
-
-  // Additional effect for streaming content - ensures smooth scrolling during streaming
-  useEffect(() => {
-    if (isStreaming) {
-      // Use requestAnimationFrame to optimize the scroll timing
-      const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      };
-      
-      const rafId = requestAnimationFrame(scrollToBottom);
-      return () => cancelAnimationFrame(rafId);
-    }
-  }, [streamingResponse, isStreaming]);
+    }, 100); // Small delay to ensure DOM is updated
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages, isTyping]);
 
   // Process code blocks after rendering with our unified code formatter
   useEffect(() => {
@@ -533,278 +397,50 @@ export default function ChatInterface() {
     });
   }, [messages, streamingResponse]); // Run when messages or streaming content changes
 
+  // Toggle streaming mode
+  const toggleStreaming = () => {
+    setUseStreaming(!useStreaming);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-grow flex h-[calc(100vh-64px)]">
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-900">
-          {/* Streaming toggle */}
-          <div className="p-2 flex justify-end items-center gap-2 text-sm border-b dark:border-gray-700">
-            <span className="text-gray-600 dark:text-gray-300">
-              Response Mode:
-            </span>
-            <button
-              onClick={() => setUseStreaming(!useStreaming)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors 
-                ${useStreaming 
-                  ? 'bg-cyan-600 text-white' 
-                  : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
-            >
-              {useStreaming ? 'Streaming' : 'Standard'}
-            </button>
-          </div>
-          {/* Header */}
-          <div className="border-b bg-slate-900 p-4">
-            <div className="flex items-center justify-between dropdown-menu">
-              <div className="flex items-center">
-                <div className="h-10 w-10 rounded-sm bg-primary flex items-center justify-center text-white mr-3 shadow-lg border border-indigo-400/20">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 18h.01"></path>
-                    <path d="M8 18h.01"></path>
-                    <path d="M16 18h.01"></path>
-                    <path d="M3 10h18"></path>
-                    <path d="M3 6h18"></path>
-                    <rect width="18" height="16" x="3" y="4" rx="2"></rect>
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="font-mono font-semibold tracking-tight">AI Code Buddy <span className="text-xs font-normal text-slate-500">v1.0.0</span></h2>
-                  <div className="flex items-center">
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                    <p className="text-xs text-green-400 font-mono">Online • Ready to assist</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20v-6M9 7V5c0-1.1.9-2 2-2h2a2 2 0 0 1 2 2v2l2 3h-8l2-3Z"></path>
-                    <path d="M5 8v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"></path>
-                  </svg>
-                  <span className="sr-only">History</span>
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <span className="sr-only">Settings</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div 
-                    className={`max-w-[80%] lg:max-w-[70%] rounded-lg p-4 ${
-                      message.sender === 'user' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-card'
-                    } shadow-sm relative group`}
-                  >
-                    {message.sender === 'ai' && message.html ? (
-                      <div className="chat-message ai-formatted-message" dangerouslySetInnerHTML={{ __html: message.html }} />
-                    ) : (
-                      <div className="chat-message whitespace-pre-wrap">
-                        {message.content}
-                      </div>
-                    )}
-                    <div className="text-xs mt-2 opacity-70">{message.timestamp}</div>
-                    
-                    {/* Action buttons for messages */}
-                    <div className="absolute -top-3 -right-3 flex space-x-1">
-                      {/* Copy button for all messages */}
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(message.content);
-                          toast({
-                            title: "Copied!",
-                            description: "Message copied to clipboard",
-                            duration: 1500,
-                          });
-                        }}
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 rounded-full bg-card shadow-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-                        title="Copy message"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                        <span className="sr-only">Copy message</span>
-                      </Button>
-                      
-                      {/* Save button for AI messages */}
-                      {message.sender === 'ai' && (
-                        <Button
-                          onClick={() => saveResponse(message.id)}
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 rounded-full bg-card shadow-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-                          title="Save response"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
-                          </svg>
-                          <span className="sr-only">Save response</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Typing indicator */}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-card rounded-lg p-4 shadow-sm flex items-center space-x-2">
-                    <div className="h-2 w-2 bg-muted-foreground rounded-full animate-pulse"></div>
-                    <div className="h-2 w-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="h-2 w-2 bg-muted-foreground rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-          
-          {/* Input area */}
-          <MessageInput 
-            newMessage={newMessage}
-            setNewMessage={setNewMessage}
-            sendMessage={sendMessage}
-            isTyping={isTyping}
+      
+      <div className="p-2 flex justify-end items-center gap-2 text-sm border-b dark:border-gray-700">
+        <span className="text-gray-600 dark:text-gray-300">
+          Response Mode:
+        </span>
+        <button
+          onClick={toggleStreaming}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors 
+            ${useStreaming 
+              ? 'bg-cyan-600 text-white' 
+              : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+        >
+          {useStreaming ? 'Streaming' : 'Standard'}
+        </button>
+      </div>
+      
+      <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-4">
+        <Card className="flex-1 flex flex-col shadow-md border-primary/10">
+          <MessageList 
+            messages={messages} 
+            isTyping={isTyping} 
+            messagesEndRef={messagesEndRef}
+            saveResponse={saveResponse}
           />
-        </div>
-        
-        {/* Sidebar with chat sessions & saved responses */}
-        <div className="hidden lg:block w-80 border-l bg-card overflow-y-auto">
-          <Tabs defaultValue="sessions" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="sessions">Chat History</TabsTrigger>
-              <TabsTrigger value="saved">Saved Responses</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="sessions" className="m-0">
-              <div className="flex justify-between items-center p-4 border-b">
-                <h3 className="font-semibold">Chat Sessions</h3>
-                <Button 
-                  onClick={createNewSession}
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-8 px-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                    <path d="M12 5v14M5 12h14"/>
-                  </svg>
-                  New Chat
-                </Button>
-              </div>
-              
-              <ScrollArea className="h-[calc(100vh-157px)]">
-                <div className="p-2 space-y-2">
-                  {chatSessions.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-muted-foreground">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <line x1="8" y1="12" x2="16" y2="12"></line>
-                          <line x1="8" y1="16" x2="16" y2="16"></line>
-                          <line x1="8" y1="8" x2="10" y2="8"></line>
-                        </svg>
-                      </div>
-                      <p className="text-muted-foreground text-sm px-4">
-                        Start a new conversation to build your chat history.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {chatSessions.map((session) => (
-                        <button
-                          key={session.id}
-                          onClick={() => loadChatSession(session.id)}
-                          className={`w-full p-2 text-left rounded-md transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                            currentSessionId === session.id 
-                              ? 'bg-primary/10 dark:bg-primary/20 border-l-2 border-primary' 
-                              : ''
-                          }`}
-                        >
-                          <div className="flex items-start">
-                            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2 flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                              </svg>
-                            </div>
-                            <div className="overflow-hidden flex-1">
-                              <p className="font-medium text-sm truncate">{session.title || 'New Chat'}</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {session.latestMessage?.content?.substring(0, 40) || 'Start chatting...'}
-                                {session.latestMessage?.content?.length > 40 ? '...' : ''}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(session.updatedAt || session.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-            
-            <TabsContent value="saved" className="m-0">
-              <div className="p-4 border-b">
-                <h3 className="font-semibold">Saved Responses</h3>
-              </div>
-              
-              <ScrollArea className="h-[calc(100vh-157px)]">
-                <div className="p-4">
-                  {savedResponses.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-muted-foreground">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
-                        </svg>
-                      </div>
-                      <p className="text-muted-foreground text-sm">
-                        No saved responses yet. Click the bookmark icon on any AI response to save it for future reference.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {savedResponses.map((response) => (
-                        <Card key={response.id} className="overflow-hidden">
-                          <CardContent className="p-3">
-                            <p className="text-sm font-medium mb-2 line-clamp-1">{response.question}</p>
-                            <div className="text-xs text-muted-foreground mb-2">{response.timestamp}</div>
-                            <div className="text-sm line-clamp-3 overflow-hidden">
-                              {response.content.split('```')[0]}
-                            </div>
-                            <Button variant="link" size="sm" className="px-0 mt-2 h-auto text-xs">
-                              View full response
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        </div>
+          
+          <Separator />
+          
+          <div className="p-4">
+            <MessageInput 
+              newMessage={newMessage} 
+              setNewMessage={setNewMessage} 
+              sendMessage={sendMessage}
+              isTyping={isTyping} 
+            />
+          </div>
+        </Card>
       </main>
     </div>
   );
