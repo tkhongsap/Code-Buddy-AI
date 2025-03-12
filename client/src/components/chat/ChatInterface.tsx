@@ -13,6 +13,7 @@ import * as DOMPurify from 'isomorphic-dompurify';
 import 'prismjs/themes/prism-okaidia.css'; // Dark theme with vibrant colors
 import MessageInput from "./MessageInput";
 import MessageList from "./MessageList";
+import ChatHeader from "./ChatHeader";
 
 interface Message {
   id: number;
@@ -406,20 +407,8 @@ export default function ChatInterface() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <div className="p-2 flex justify-end items-center gap-2 text-sm border-b dark:border-gray-700">
-        <span className="text-gray-600 dark:text-gray-300">
-          Response Mode:
-        </span>
-        <button
-          onClick={toggleStreaming}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors 
-            ${useStreaming 
-              ? 'bg-cyan-600 text-white' 
-              : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
-        >
-          {useStreaming ? 'Streaming' : 'Standard'}
-        </button>
-      </div>
+      {/* Use the ChatHeader component */}
+      <ChatHeader toggleStreaming={toggleStreaming} useStreaming={useStreaming} />
       
       <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full p-4">
         <Card className="flex-1 flex flex-col shadow-md border-primary/10">
