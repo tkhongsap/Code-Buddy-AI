@@ -204,8 +204,10 @@ The format should be like this:
         for (const [domain, scores] of Object.entries(parsedData)) {
           if (Array.isArray(scores) && scores.length > 0) {
             // Calculate average and scale to 0-100
-            const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-            result[domain] = Math.round(average * 10); // Convert from 1-10 scale to 0-100
+            const average = scores.reduce((sum, score) => sum + (Number(score) || 0), 0) / scores.length;
+            // Ensure the values are between 0-100 (from 1-10 scale)
+            // Using a more controlled scale: 1->10, 2->20, ... 10->100
+            result[domain] = Math.min(100, Math.max(0, Math.round(average * 10)));
           }
         }
         

@@ -24,20 +24,47 @@ export default function SkillList({ skills, className }: SkillListProps) {
     );
   }
 
+  // Helper function to get normalized progress (0-100)
+  const getNormalizedProgress = (progress: number): number => {
+    return Math.min(100, Math.max(0, progress));
+  };
+
+  // Helper function to get skill level based on progress
+  const getSkillLevel = (progress: number): string => {
+    const normalized = getNormalizedProgress(progress);
+    if (normalized < 20) return 'Beginner';
+    if (normalized < 40) return 'Basic';
+    if (normalized < 60) return 'Intermediate';
+    if (normalized < 80) return 'Advanced';
+    return 'Expert';
+  };
+
   // Helper function to get badge color based on skill level
   const getBadgeVariant = (level: string) => {
     switch (level) {
-      case 'Advanced':
+      case 'Expert':
         return 'default';
-      case 'Intermediate':
+      case 'Advanced':
         return 'secondary';
+      case 'Intermediate':
+        return 'outline';
+      case 'Basic':
+        return 'outline';
       default:
         return 'outline';
     }
   };
 
   // Sort skills by progress (highest first)
-  const sortedSkills = [...skills].sort((a, b) => b.progress - a.progress);
+  const sortedSkills = [...skills]
+    .map(skill => ({
+      ...skill,
+      // Ensure progress is normalized
+      progress: getNormalizedProgress(skill.progress),
+      // Calculate level based on progress value
+      level: getSkillLevel(skill.progress)
+    }))
+    .sort((a, b) => b.progress - a.progress);
 
   return (
     <div className={`space-y-6 ${className}`}>

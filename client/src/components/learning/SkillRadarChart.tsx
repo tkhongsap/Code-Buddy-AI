@@ -6,7 +6,8 @@ import {
   PolarRadiusAxis, 
   Radar, 
   ResponsiveContainer, 
-  Tooltip
+  Tooltip,
+  Legend
 } from 'recharts';
 
 interface SkillRadarChartProps {
@@ -16,12 +17,16 @@ interface SkillRadarChartProps {
 
 export default function SkillRadarChart({ skills, className }: SkillRadarChartProps) {
   // Convert skills object to the format needed by Recharts
+  // Also normalize values to ensure they're in 0-100 range
   const data = useMemo(() => {
-    return Object.entries(skills).map(([name, value]) => ({
-      skill: name,
-      value: value,
-      fullMark: 100
-    }));
+    return Object.entries(skills)
+      .map(([name, value]) => ({
+        skill: name,
+        value: Math.min(100, Math.max(0, value)), // Ensure values are between 0-100
+        fullMark: 100
+      }))
+      // Sort by skill name for consistent display
+      .sort((a, b) => a.skill.localeCompare(b.skill));
   }, [skills]);
 
   // If no skills data, show a message
@@ -33,24 +38,38 @@ export default function SkillRadarChart({ skills, className }: SkillRadarChartPr
     );
   }
 
+  // Format percentage for tooltip
+  const formatSkillLevel = (value: number) => {
+    // Map 0-100 to text representation
+    if (value < 20) return 'Beginner';
+    if (value < 40) return 'Basic';
+    if (value < 60) return 'Intermediate';
+    if (value < 80) return 'Advanced';
+    return 'Expert';
+  };
+
   return (
     <div className={`w-full h-[400px] ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsRadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid />
           <PolarAngleAxis dataKey="skill" />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tickCount={5} />
           <Radar
-            name="Your Skills"
+            name="Skill Level"
             dataKey="value"
             stroke="#8884d8"
             fill="#8884d8"
             fillOpacity={0.6}
           />
           <Tooltip 
-            formatter={(value: number) => [`${value}%`, 'Skill Level']}
+            formatter={(value: number) => [
+              `${value}% (${formatSkillLevel(value)})`, 
+              'Skill Level'
+            ]}
             labelFormatter={(label: string) => label}
           />
+          <Legend />
         </RechartsRadarChart>
       </ResponsiveContainer>
     </div>

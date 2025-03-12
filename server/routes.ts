@@ -433,11 +433,22 @@ The tips should be valuable, specific to the technologies discussed, and help th
       // Get existing skill data for the user
       const userSkills = await storage.getUserSkills(userId);
       
+      // Helper function to normalize progress value to 0-100
+      const normalizeProgress = (value: number): number => {
+        return Math.min(100, Math.max(0, value));
+      };
+      
       // Calculate overall completion based on skill progress
       let completion = 0;
       if (userSkills.length > 0) {
-        const totalProgress = userSkills.reduce((sum, skill) => sum + skill.progress, 0);
-        completion = Math.round(totalProgress / userSkills.length);
+        // Normalize each skill progress value before calculating the average
+        const normalizedSkills = userSkills.map(skill => ({
+          ...skill,
+          progress: normalizeProgress(skill.progress)
+        }));
+        
+        const totalProgress = normalizedSkills.reduce((sum, skill) => sum + skill.progress, 0);
+        completion = Math.round(totalProgress / normalizedSkills.length);
       } else {
         // Default value if no skills exist yet
         completion = 45;
@@ -457,8 +468,8 @@ The tips should be valuable, specific to the technologies discussed, and help th
         },
         skills: userSkills.map(skill => ({
           name: skill.skillName,
-          progress: skill.progress,
-          level: getSkillLevel(skill.progress),
+          progress: normalizeProgress(skill.progress),
+          level: getSkillLevel(normalizeProgress(skill.progress)),
           lastUpdated: skill.lastUpdated
         }))
       };
@@ -493,10 +504,15 @@ The tips should be valuable, specific to the technologies discussed, and help th
         });
       }
       
+      // Helper function to normalize progress value to 0-100
+      const normalizeProgress = (value: number): number => {
+        return Math.min(100, Math.max(0, value));
+      };
+      
       // Format data for radar chart
       const skillData: Record<string, number> = {};
       userSkills.forEach(skill => {
-        skillData[skill.skillName] = skill.progress;
+        skillData[skill.skillName] = normalizeProgress(skill.progress);
       });
       
       res.json({
