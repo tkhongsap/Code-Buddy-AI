@@ -131,6 +131,13 @@ export default function Header() {
                 </Button>
                 <Button 
                   variant="ghost" 
+                  onClick={() => handleNavigation("/score")}
+                  className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/score" ? "text-primary font-medium" : ""}`}
+                >
+                  Score Your Code
+                </Button>
+                <Button 
+                  variant="ghost" 
                   onClick={() => handleNavigation("/learning")}
                   className={`text-foreground/70 hover:text-foreground hover:bg-transparent ${currentPath === "/learning" ? "text-primary font-medium" : ""}`}
                 >
@@ -317,6 +324,13 @@ export default function Header() {
                       className={`justify-start ${currentPath === "/optimization" ? "text-primary font-medium" : ""}`}
                     >
                       Optimize Your Code
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleNavigation("/score")}
+                      className={`justify-start ${currentPath === "/score" ? "text-primary font-medium" : ""}`}
+                    >
+                      Score Your Code
                     </Button>
                     <Button 
                       variant="ghost" 

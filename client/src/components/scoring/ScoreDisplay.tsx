@@ -1,6 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface ScoreResult {
   score: number;
@@ -14,127 +15,96 @@ interface ScoreDisplayProps {
 }
 
 export default function ScoreDisplay({ result }: ScoreDisplayProps) {
-  // Get the appropriate color based on score
+  const { score, feedback, strengths, improvements } = result;
+  
+  // Color coding for the score
   const getScoreColor = (score: number) => {
-    if (score >= 8) return "text-green-500";
-    if (score >= 6) return "text-blue-500";
-    if (score >= 4) return "text-yellow-500";
-    return "text-red-500";
+    if (score >= 8) return 'text-green-600 dark:text-green-400';
+    if (score >= 6) return 'text-blue-600 dark:text-blue-400';
+    if (score >= 4) return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
-  // Get the appropriate background color for the score ring
-  const getScoreRingColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-blue-500";
-    if (score >= 4) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  // Get percentage for the score ring gradient
-  const getScorePercentage = (score: number) => {
-    return (score / 10) * 100;
+  // Get progress color based on score
+  const getProgressColor = (score: number) => {
+    if (score >= 8) return 'bg-green-600';
+    if (score >= 6) return 'bg-blue-600';
+    if (score >= 4) return 'bg-amber-600';
+    return 'bg-red-600';
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-bold">Assessment Results</h3>
-      
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-none flex flex-col items-center">
-          {/* Score Circle */}
-          <div className="relative w-40 h-40">
-            <svg className="w-full h-full" viewBox="0 0 100 100">
-              {/* Background circle */}
-              <circle 
-                cx="50" 
-                cy="50" 
-                r="45" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="8" 
-                opacity="0.1" 
-                className="text-muted-foreground" 
-              />
-              
-              {/* Score circle */}
-              <circle 
-                cx="50" 
-                cy="50" 
-                r="45" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="8" 
-                strokeLinecap="round" 
-                strokeDasharray="283" 
-                strokeDashoffset={283 - (283 * getScorePercentage(result.score) / 100)}
-                className={getScoreColor(result.score)} 
-                transform="rotate(-90 50 50)" 
-              />
-              
-              {/* Score text */}
-              <text 
-                x="50" 
-                y="50" 
-                textAnchor="middle" 
-                dominantBaseline="middle" 
-                fontSize="24" 
-                fontWeight="bold" 
-                className={getScoreColor(result.score)}
-              >
-                {result.score}/10
-              </text>
-            </svg>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex justify-between items-center">
+            <span>Code Quality Score</span>
+            <span className={`text-3xl font-bold ${getScoreColor(score)}`}>{score}/10</span>
+          </CardTitle>
+          <CardDescription>
+            Overall assessment of your code quality
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span>Quality</span>
+              <span>{score * 10}%</span>
+            </div>
+            <Progress 
+              value={score * 10} 
+              className="h-2"
+              indicatorClassName={getProgressColor(score)}
+            />
           </div>
-          
-          <div className="text-center mt-2">
-            <p className="text-sm text-muted-foreground">Code Quality Score</p>
+          <div className="text-sm text-muted-foreground mb-6">
+            {feedback}
           </div>
-        </div>
-        
-        <div className="flex-1 space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <h4 className="font-semibold mb-2">Feedback</h4>
-              <p className="text-sm">{result.feedback}</p>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-semibold mb-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500 mr-1">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                  Strengths
-                </h4>
-                <ul className="list-disc ml-5 text-sm space-y-1">
-                  {result.strengths.map((strength, index) => (
-                    <li key={index}>{strength}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-semibold mb-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 mr-1">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                  </svg>
-                  Areas to Improve
-                </h4>
-                <ul className="list-disc ml-5 text-sm space-y-1">
-                  {result.improvements.map((improvement, index) => (
-                    <li key={index}>{improvement}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg text-green-600 dark:text-green-400">
+              Strengths
+            </CardTitle>
+            <CardDescription>
+              What your code does well
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {strengths.map((strength, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-green-600 dark:text-green-400 mr-2">✓</span>
+                  <span>{strength}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg text-amber-600 dark:text-amber-400">
+              Areas for Improvement
+            </CardTitle>
+            <CardDescription>
+              Suggestions to enhance your code
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {improvements.map((improvement, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-amber-600 dark:text-amber-400 mr-2">↗</span>
+                  <span>{improvement}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { getChatCompletion, getChatCompletionStream, type OpenAIChatMessage } from "./openai";
+import { z } from "zod";
 import { insertChatSessionSchema, insertChatMessageSchema, type ChatMessage } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -886,6 +887,132 @@ The tips should be valuable, specific to the technologies discussed, and help th
     } catch (error) {
       console.error("Error adding message to chat session:", error);
       res.status(500).json({ error: "Failed to add message to chat session" });
+    }
+  });
+
+  // Code scoring endpoint
+  app.post("/api/code/score", async (req, res) => {
+    // Check both Passport and custom session authentication
+    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
+
+    try {
+      // Validate request body
+      const codeSchema = z.object({
+        code: z.string().min(1, "Code is required")
+      });
+      
+      const parseResult = codeSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+      
+      const { code } = parseResult.data;
+      
+      // Create a prompt for OpenAI
+      const messages: OpenAIChatMessage[] = [
+        {
+          role: "system",
+          content: `You are a code analysis expert who evaluates code quality and provides constructive feedback.
+          
+Your task is to analyze the code snippet or query provided by the user and provide:
+1. A numerical score on a scale of 0-10, where 0 is very poor and 10 is excellent
+2. A paragraph of feedback explaining the score and overall assessment
+3. 3-5 bullet points of strengths in the code
+4. 3-5 bullet points of areas for improvement
+
+Format your response as a JSON object with the following structure:
+{
+  "score": number between 0-10,
+  "feedback": "overall feedback paragraph",
+  "strengths": ["strength 1", "strength 2", ...],
+  "improvements": ["improvement 1", "improvement 2", ...]
+}
+
+Be fair and constructive in your evaluation. If the user has provided a coding question instead of code, evaluate the clarity and specificity of their question.`
+        },
+        {
+          role: "user",
+          content: `Please evaluate this code and provide a quality score:\n\n${code}`
+        }
+      ];
+      
+      // Get response from OpenAI
+      try {
+        const response = await getChatCompletion(messages);
+        
+        try {
+          // Clean up the response - remove markdown code blocks if present
+          let cleanedResponse = response.replace(/```json\s+/g, '').replace(/```\s*$/g, '');
+          cleanedResponse = cleanedResponse.trim();
+          
+          // Parse the JSON response
+          const scoreData = JSON.parse(cleanedResponse);
+          
+          // Verify the response format
+          if (
+            typeof scoreData.score === 'number' && 
+            typeof scoreData.feedback === 'string' && 
+            Array.isArray(scoreData.strengths) && 
+            Array.isArray(scoreData.improvements)
+          ) {
+            return res.json(scoreData);
+          } else {
+            // Fall back to a default response
+            const fallbackScore = {
+              score: 5,
+              feedback: "I analyzed your code but wasn't able to format my analysis properly. Here's a default assessment suggesting your code has both good qualities and areas for improvement.",
+              strengths: ["Has basic structure", "Logic is somewhat clear", "Functionality seems intact"],
+              improvements: ["Consider adding more comments", "Code structure could be optimized", "Error handling could be improved"]
+            };
+            return res.json(fallbackScore);
+          }
+        } catch (parseError) {
+          console.error("Error parsing OpenAI code score response:", parseError);
+          
+          // Try to extract JSON from the response using regex
+          try {
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const extractedJson = jsonMatch[0];
+              const extractedData = JSON.parse(extractedJson);
+              
+              if (extractedData && typeof extractedData.score === 'number') {
+                return res.json(extractedData);
+              }
+            }
+          } catch (extractError) {
+            console.error("Error extracting JSON from response:", extractError);
+          }
+          
+          // Return error if parsing fails
+          return res.status(500).json({ 
+            error: "Failed to generate code score - Invalid response format",
+            score: 5,
+            feedback: "Unable to process your code for scoring at this time.",
+            strengths: [],
+            improvements: []
+          });
+        }
+      } catch (aiError) {
+        console.error("Error getting code score from OpenAI:", aiError);
+        return res.status(500).json({ 
+          error: "Failed to generate code score",
+          score: 5,
+          feedback: "Unable to process your code for scoring at this time.",
+          strengths: [],
+          improvements: []
+        });
+      }
+    } catch (error) {
+      console.error("Error processing code scoring:", error);
+      res.status(500).json({ 
+        error: "Failed to process code for scoring",
+        score: 5,
+        feedback: "An error occurred while analyzing your code.",
+        strengths: [],
+        improvements: []
+      });
     }
   });
 
