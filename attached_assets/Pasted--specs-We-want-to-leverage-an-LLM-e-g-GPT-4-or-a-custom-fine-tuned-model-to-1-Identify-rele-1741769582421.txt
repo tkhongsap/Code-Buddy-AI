@@ -1,0 +1,97 @@
+<specs>
+We want to leverage an LLM (e.g., GPT-4 or a custom fine-tuned model) to:
+1. Identify relevant skill domains from the user’s past queries (45 transactions).
+2. Estimate a skill score for each identified domain (e.g., JavaScript, React, Docker, Python).
+
+The outcome will be used to generate a **Skill Radar Chart** that visualizes strengths and weaknesses across multiple domains.
+</specs>
+
+<your_task>
+1. **Prepare the Data for the LLM**
+   - Gather the user’s 45 queries (or however many transactions exist).
+   - **Sanitize** any sensitive or personally identifiable information (PII) if necessary.
+   - Combine the queries into a structured format (e.g., a JSON array) that can be fed to the LLM.
+
+2. **Prompt Engineering**
+   - Construct a prompt that instructs the LLM to:
+     - Read each query.
+     - Identify one or more skill domains (e.g., JavaScript, React, Node.js, Docker, Python, DevOps, etc.).
+     - Estimate the user’s skill level for each domain mentioned, based on the complexity or depth of the question.
+   - **Example Prompt** (pseudocode):
+     ```plaintext
+     You are a skill assessment assistant. You will be given a list of user queries about programming. 
+     For each query, determine which domain(s) it relates to (e.g., JavaScript, React, Python, Docker, etc.) 
+     and estimate the user's skill level in that domain from 1 to 10, 
+     where 1 is a complete beginner question and 10 indicates an advanced or expert-level question.
+     
+     Here is the list of user queries:
+     1) "How do I declare a variable in JavaScript?"
+     2) "What's the best way to handle states in React hooks?"
+     3) ...
+     
+     Return your results in JSON format, like this:
+     [
+       { "queryIndex": 1, "domains": ["JavaScript"], "estimatedSkill": 2 },
+       { "queryIndex": 2, "domains": ["React"], "estimatedSkill": 6 },
+       ...
+     ]
+     ```
+   - Adjust the prompt to **reflect your actual domain categories** and scoring methodology (1–10, 1–100, etc.).
+
+3. **LLM Integration**
+   - **Send the Prompt**: Use the OpenAI GPT-4 or a fine-tuned model to process the prompt.  
+   - **Parse the Response**: Once you receive the JSON output, parse it to build a data structure mapping domains to an array of skill estimates.
+     - Example:
+       ```json
+       {
+         "JavaScript": [2, 4],
+         "React": [6, 7],
+         "Docker": [3]
+       }
+       ```
+   - **Handle Errors or Ambiguities**:
+     - If the LLM cannot identify a domain, consider it as “General Programming” or ignore it.
+     - If the LLM provides inconsistent data, handle gracefully (e.g., fallback to a default domain).
+
+4. **Aggregate & Normalize Scores**
+   - For each domain, average the skill estimates across all relevant queries.
+   - **Normalize** these averages to a 0–100 or 1–10 scale if necessary. 
+   - **Example**: If the average for React is 6.8 on a 1–10 scale, that translates to 68 on a 0–100 scale.
+
+5. **Store or Cache the Results**
+   - Persist the final domain scores in a database (e.g., PostgreSQL) or a cache (Redis) with a timestamp.
+   - This allows you to **quickly retrieve** the data for the Skill Radar Chart without rerunning the LLM each time.
+
+6. **Generate the Skill Radar Chart**
+   - Create an API endpoint (e.g., `GET /api/skills`) that returns a user’s domain scores in JSON:
+     ```json
+     {
+       "javascript": 20,
+       "react": 68,
+       "docker": 35,
+       "python": 50,
+       "devops": 40
+     }
+     ```
+   - Use a front-end chart library (Recharts, react-chartjs-2, etc.) to display the data as a radar/spider chart.
+   - Label each axis with the domain name (JavaScript, React, Docker, etc.) and set the scale (0–100 or 1–10).
+
+7. **Validation & Fine-Tuning**
+   - **Spot-Check Results**: Compare the LLM’s domain classification and skill scores against known user skill levels or feedback.
+   - **Fine-Tune**:
+     - If the LLM consistently under- or over-estimates skill in certain domains, adjust the prompt or apply a post-processing bias.
+     - Consider adding **sample queries** with known skill levels to guide the LLM.
+
+8. **Future Enhancements**
+   - **Incremental Updates**: As the user makes new queries, incrementally re-run the skill assessment only for the new queries and recalculate the overall score.
+   - **Skill Decay**: Optionally introduce the concept of skill decay over time if a user hasn’t asked questions in a domain recently.
+   - **User Feedback**: Let the user confirm or adjust their estimated skill levels to improve the model’s accuracy.
+
+</your_task>
+
+<rules>
+- **Ensure Data Privacy**: Remove any sensitive info from user queries before sending them to the LLM.
+- **Keep Prompt Short & Clear**: Avoid overly long prompts that might confuse the model.
+- **Use a Standardized Skill Scale**: Decide on a scale (1–10 or 1–100) and remain consistent throughout.
+- **Document** each step so future maintainers understand the logic behind domain classification and skill estimation.
+</rules>
