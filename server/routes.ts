@@ -2,61 +2,80 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { getChatCompletion, getChatCompletionStream, type OpenAIChatMessage } from "./openai";
+import {
+  getChatCompletion,
+  getChatCompletionStream,
+  type OpenAIChatMessage,
+} from "./openai";
 import { z } from "zod";
-import { insertChatSessionSchema, insertChatMessageSchema, type ChatMessage } from "@shared/schema";
+import {
+  insertChatSessionSchema,
+  insertChatMessageSchema,
+  type ChatMessage,
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
   // API endpoints for the AI Code Buddy application
-  
+
   // Developer tips endpoint
   app.get("/api/developer-tips", async (req, res) => {
     // Check both Passport and custom session authentication
-    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
     if (!isAuthenticated) return res.sendStatus(401);
 
     try {
       // Get userId from either Passport or custom session
-      const userId = req.isAuthenticated() 
-        ? (req.user as any).id 
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
         : (req.session as any).userId;
-      
-      console.log(`Developer tips request - Auth method: ${req.isAuthenticated() ? 'Passport' : 'Custom session'}, User ID: ${userId}`);
-      
+
+      console.log(
+        `Developer tips request - Auth method: ${req.isAuthenticated() ? "Passport" : "Custom session"}, User ID: ${userId}`,
+      );
+
       // Get the user's sessions
       const sessions = await storage.getUserChatSessions(userId);
-      
+
       // Collect the 30 most recent messages across all sessions
       let allMessages: any[] = [];
-      
+
       for (const session of sessions) {
         const messages = await storage.getChatMessages(session.id);
-        allMessages = [...allMessages, ...messages.map(msg => ({
-          ...msg,
-          sessionTitle: session.title
-        }))];
+        allMessages = [
+          ...allMessages,
+          ...messages.map((msg) => ({
+            ...msg,
+            sessionTitle: session.title,
+          })),
+        ];
       }
-      
+
       // Sort messages by timestamp (most recent first) and take the top 30
-      allMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      allMessages.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
       const recentMessages = allMessages.slice(0, 30);
-      
+
       if (recentMessages.length === 0) {
         // If no messages, return a specific message about needing chat history
         return res.json({
           message: "Insufficient chat history to generate personalized tips",
-          tips: []
+          tips: [],
         });
       }
-      
+
       // Prepare the messages for the OpenAI prompt
-      const conversationHistory = recentMessages.map(msg => {
-        return `${msg.sender.toUpperCase()}: ${msg.content.substring(0, 1000)}${msg.content.length > 1000 ? '...' : ''}`;
-      }).join('\n\n');
-      
+      const conversationHistory = recentMessages
+        .map((msg) => {
+          return `${msg.sender.toUpperCase()}: ${msg.content.substring(0, 1000)}${msg.content.length > 1000 ? "..." : ""}`;
+        })
+        .join("\n\n");
+
       // Create the system prompt for OpenAI
       const messages: OpenAIChatMessage[] = [
         {
@@ -72,72 +91,79 @@ For each tip, provide:
 
 Format your response as a JSON object with a 'tips' array containing 3 tip objects. Each tip should have: id, title, description, iconType, actionType, and isNew fields.
 
-The tips should be valuable, specific to the technologies discussed, and help the developer advance their skills.`
+The tips should be valuable, specific to the technologies discussed, and help the developer advance their skills.`,
         },
         {
           role: "user",
-          content: `Here's my recent conversation history. Please analyze it and generate 3 personalized developer tips for me:\n\n${conversationHistory}`
-        }
+          content: `Here's my recent conversation history. Please analyze it and generate 3 personalized developer tips for me:\n\n${conversationHistory}`,
+        },
       ];
-      
+
       // Get response from OpenAI
       try {
         const response = await getChatCompletion(messages);
         console.log("Developer tips response:", response);
-        
+
         // Process and parse the JSON response
         try {
           console.log("Raw OpenAI response:", response);
-          
+
           // Clean up the response - remove markdown code blocks if present
-          let cleanedResponse = response.replace(/```json\s+/g, '').replace(/```\s*$/g, '');
+          let cleanedResponse = response
+            .replace(/```json\s+/g, "")
+            .replace(/```\s*$/g, "");
           cleanedResponse = cleanedResponse.trim();
-          
+
           console.log("Cleaned response:", cleanedResponse);
-          
+
           // Try to parse the response as JSON
           const tipsData = JSON.parse(cleanedResponse);
-          
+
           // Verify the response format
           if (tipsData && tipsData.tips && Array.isArray(tipsData.tips)) {
             console.log("Valid tips data parsed from OpenAI response");
             return res.json(tipsData);
           } else {
-            console.log("Response has incorrect format, using structured fallback");
+            console.log(
+              "Response has incorrect format, using structured fallback",
+            );
             // If format is incorrect, transform to expected format
             const fallbackTips = {
               tips: [
                 {
                   id: 1,
                   title: "Improve Your Code Understanding",
-                  description: "Based on your questions, reviewing fundamentals could help solve recurring issues.",
+                  description:
+                    "Based on your questions, reviewing fundamentals could help solve recurring issues.",
                   iconType: "book-open",
                   actionType: "Explore",
-                  isNew: true
+                  isNew: true,
                 },
                 {
                   id: 2,
                   title: "Try Advanced Debugging Techniques",
-                  description: "Use tracing and structured logging to identify the problems you've been discussing.",
+                  description:
+                    "Use tracing and structured logging to identify the problems you've been discussing.",
                   iconType: "terminal",
                   actionType: "Start",
-                  isNew: false
+                  isNew: false,
                 },
                 {
                   id: 3,
                   title: "Refactor Your Application",
-                  description: "Apply clean code principles to address the complexity issues in your codebase.",
+                  description:
+                    "Apply clean code principles to address the complexity issues in your codebase.",
                   iconType: "git-branch",
                   actionType: "Continue",
-                  isNew: false
-                }
-              ]
+                  isNew: false,
+                },
+              ],
             };
             return res.json(fallbackTips);
           }
         } catch (parseError) {
           console.error("Error parsing OpenAI response as JSON:", parseError);
-          
+
           // Try to extract JSON from the response using regex
           try {
             const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -145,35 +171,42 @@ The tips should be valuable, specific to the technologies discussed, and help th
               const extractedJson = jsonMatch[0];
               console.log("Attempting to parse extracted JSON:", extractedJson);
               const extractedData = JSON.parse(extractedJson);
-              
-              if (extractedData && extractedData.tips && Array.isArray(extractedData.tips)) {
-                console.log("Successfully extracted and parsed JSON from response");
+
+              if (
+                extractedData &&
+                extractedData.tips &&
+                Array.isArray(extractedData.tips)
+              ) {
+                console.log(
+                  "Successfully extracted and parsed JSON from response",
+                );
                 return res.json(extractedData);
               }
             }
           } catch (extractError) {
             console.error("Error extracting JSON from response:", extractError);
           }
-          
+
           // Return error instead of fallback tips
           console.log("Error parsing LLM response, returning error");
-          return res.status(500).json({ 
-            error: "Failed to generate developer tips - Invalid response format",
-            tips: []
+          return res.status(500).json({
+            error:
+              "Failed to generate developer tips - Invalid response format",
+            tips: [],
           });
         }
       } catch (aiError) {
         console.error("Error getting developer tips from OpenAI:", aiError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to generate developer tips",
-          tips: []
+          tips: [],
         });
       }
     } catch (error) {
       console.error("Error fetching developer tips:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to fetch developer tips",
-        tips: []
+        tips: [],
       });
     }
   });
@@ -181,17 +214,20 @@ The tips should be valuable, specific to the technologies discussed, and help th
   // Dashboard data endpoint
   app.get("/api/dashboard", async (req, res) => {
     // Check both Passport and custom session authentication
-    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
     if (!isAuthenticated) return res.sendStatus(401);
 
     try {
       // Get userId from either Passport or custom session
-      const userId = req.isAuthenticated() 
-        ? (req.user as any).id 
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
         : (req.session as any).userId;
-      
-      console.log(`Dashboard request - Auth method: ${req.isAuthenticated() ? 'Passport' : 'Custom session'}, User ID: ${userId}`);
-      
+
+      console.log(
+        `Dashboard request - Auth method: ${req.isAuthenticated() ? "Passport" : "Custom session"}, User ID: ${userId}`,
+      );
+
       // Get the user's sessions
       const sessions = await storage.getUserChatSessions(userId);
       let totalQueriesCount = 0;
@@ -206,42 +242,43 @@ The tips should be valuable, specific to the technologies discussed, and help th
         sessionId: number;
         conversation?: {
           id: number;
-          sender: 'user' | 'ai';
+          sender: "user" | "ai";
           content: string;
           timestamp: string;
         }[];
       }
-      
+
       let recentQueriesData: RecentQueryData[] = [];
-      
+
       // Get recent sessions with previews
-      const recentSessionsWithPreview = await storage.getChatSessionsWithPreview(userId, 10);
-      
+      const recentSessionsWithPreview =
+        await storage.getChatSessionsWithPreview(userId, 10);
+
       // For each session, get the messages and count them
       for (const session of sessions) {
         const messages = await storage.getChatMessages(session.id);
-        
+
         // Only count user messages, not AI responses
-        const userMessages = messages.filter(msg => msg.sender === 'user');
+        const userMessages = messages.filter((msg) => msg.sender === "user");
         totalQueriesCount += userMessages.length;
-        
+
         // Count AI responses that are saved (we don't have a proper flag for this yet, so this is a placeholder)
         // In a real implementation, we'd check if the responses were actually saved by the user
-        const aiMessages = messages.filter(msg => msg.sender === 'ai');
+        const aiMessages = messages.filter((msg) => msg.sender === "ai");
         // For this demo, let's assume 20% of AI responses are saved
         savedSolutionsCount += Math.round(aiMessages.length * 0.2);
       }
-      
+
       // Get the 3 most recent sessions for the Recent Queries card
       const recentSessions = recentSessionsWithPreview.slice(0, 3);
-      
+
       // For each recent session, get the first user message to display as the query
       for (const session of recentSessions) {
         const messages = await storage.getChatMessages(session.id);
-        
+
         // Find the first user message in this session
-        const firstUserMessage = messages.find(msg => msg.sender === 'user');
-        
+        const firstUserMessage = messages.find((msg) => msg.sender === "user");
+
         if (firstUserMessage) {
           // Extract a timestamp to display
           const messageDate = new Date(firstUserMessage.timestamp);
@@ -249,77 +286,96 @@ The tips should be valuable, specific to the technologies discussed, and help th
           const diffInMs = now.getTime() - messageDate.getTime();
           const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
           const diffInDays = Math.floor(diffInHours / 24);
-          
+
           let timeAgo: string;
           if (diffInHours < 1) {
-            timeAgo = 'Just now';
+            timeAgo = "Just now";
           } else if (diffInHours < 24) {
             timeAgo = `${diffInHours}h ago`;
           } else {
             timeAgo = `${diffInDays}d ago`;
           }
-          
+
           // Generate some tags based on the content of the message
           // In a real app, these would be actual tags stored with the message or generated by AI
           const generateTags = (content: string): string[] => {
             const tags: string[] = [];
-            if (content.toLowerCase().includes('react')) tags.push('React');
-            if (content.toLowerCase().includes('typescript') || content.toLowerCase().includes('ts')) tags.push('TypeScript');
-            if (content.toLowerCase().includes('sql') || content.toLowerCase().includes('database')) tags.push('Database');
-            if (content.toLowerCase().includes('css') || content.toLowerCase().includes('style')) tags.push('CSS');
-            if (content.toLowerCase().includes('javascript') || content.toLowerCase().includes('js')) tags.push('JavaScript');
-            if (tags.length === 0) tags.push('Programming');
+            if (content.toLowerCase().includes("react")) tags.push("React");
+            if (
+              content.toLowerCase().includes("typescript") ||
+              content.toLowerCase().includes("ts")
+            )
+              tags.push("TypeScript");
+            if (
+              content.toLowerCase().includes("sql") ||
+              content.toLowerCase().includes("database")
+            )
+              tags.push("Database");
+            if (
+              content.toLowerCase().includes("css") ||
+              content.toLowerCase().includes("style")
+            )
+              tags.push("CSS");
+            if (
+              content.toLowerCase().includes("javascript") ||
+              content.toLowerCase().includes("js")
+            )
+              tags.push("JavaScript");
+            if (tags.length === 0) tags.push("Programming");
             return tags;
           };
-          
+
           // Create formatted conversation array for frontend display
-          const formattedConversation = messages.map(msg => ({
+          const formattedConversation = messages.map((msg) => ({
             id: msg.id,
-            sender: msg.sender as 'user' | 'ai',
+            sender: msg.sender as "user" | "ai",
             content: msg.content,
             timestamp: new Date(msg.timestamp).toISOString(),
-            html: msg.contentHtml || undefined
+            html: msg.contentHtml || undefined,
           }));
 
           // Create a combined full content string with all messages
-          const fullContentString = messages.map(msg => 
-            `${msg.sender.toUpperCase()}: ${msg.content}`
-          ).join('\n\n');
-          
+          const fullContentString = messages
+            .map((msg) => `${msg.sender.toUpperCase()}: ${msg.content}`)
+            .join("\n\n");
+
           recentQueriesData.push({
             id: session.id,
-            query: firstUserMessage.content.length > 50 
-              ? firstUserMessage.content.substring(0, 50) + '...' 
-              : firstUserMessage.content,
+            query:
+              firstUserMessage.content.length > 50
+                ? firstUserMessage.content.substring(0, 50) + "..."
+                : firstUserMessage.content,
             fullContent: fullContentString,
             timestamp: timeAgo,
             tags: generateTags(firstUserMessage.content),
             sessionId: session.id,
-            conversation: formattedConversation
+            conversation: formattedConversation,
           });
         }
       }
-      
-      console.log(`Found ${totalQueriesCount} total queries and ${savedSolutionsCount} saved solutions for user ${userId}`);
-      
+
+      console.log(
+        `Found ${totalQueriesCount} total queries and ${savedSolutionsCount} saved solutions for user ${userId}`,
+      );
+
       // Generate weekly activity data based on actual user chat messages
       const weeklyActivityData = [0, 0, 0, 0, 0, 0, 0]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
       const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      
+
       // Get current date and compute the date for the start of the week (Sunday)
       const today = new Date();
       const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - dayOfWeek); // Go back to Sunday
       startOfWeek.setHours(0, 0, 0, 0); // Start of the day
-      
+
       // For each session, analyze the message timestamps
       for (const session of sessions) {
         const messages = await storage.getChatMessages(session.id);
-        
+
         for (const message of messages) {
           const messageDate = new Date(message.timestamp);
-          
+
           // Only count messages from current week
           if (messageDate >= startOfWeek) {
             const messageDayOfWeek = messageDate.getDay();
@@ -327,11 +383,14 @@ The tips should be valuable, specific to the technologies discussed, and help th
           }
         }
       }
-      
+
       // Reorder the data to start with Monday for display
-      const mondayBasedData = [...weeklyActivityData.slice(1), weeklyActivityData[0]];
+      const mondayBasedData = [
+        ...weeklyActivityData.slice(1),
+        weeklyActivityData[0],
+      ];
       const mondayBasedLabels = [...labels.slice(1), labels[0]];
-      
+
       const dashboardData = {
         stats: {
           totalQueries: totalQueriesCount,
@@ -354,23 +413,24 @@ The tips should be valuable, specific to the technologies discussed, and help th
   // Learning progress endpoint
   app.get("/api/learning-progress", async (req, res) => {
     // Check both Passport and custom session authentication
-    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
     if (!isAuthenticated) return res.sendStatus(401);
 
     try {
       // Get userId from either Passport or custom session
-      const userId = req.isAuthenticated() 
-        ? (req.user as any).id 
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
         : (req.session as any).userId;
-      
+
       // In a full implementation, we would fetch this data from the database using:
       // const skillProgressData = await db.select().from(skillProgress).where(eq(skillProgress.userId, userId));
       // const courseProgressData = await db.select().from(courseProgress).where(eq(courseProgress.userId, userId));
-      
+
       // For now, let's generate some basic data based on the user's ID to ensure it's not hardcoded
       // This makes it "dynamic" per user while we wait for full DB implementation
       const seed = userId * 7; // Use userId to seed our "random" numbers
-      
+
       const learningData = {
         overallProgress: {
           completion: (seed % 30) + 40, // Between 40-70%
@@ -444,7 +504,13 @@ The tips should be valuable, specific to the technologies discussed, and help th
     // Temporarily disable authentication check for testing
     // if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { message, conversationHistory = [], stream = false, sessionId = null, isOptimizationRequest = false } = req.body;
+    const {
+      message,
+      conversationHistory = [],
+      stream = false,
+      sessionId = null,
+      isOptimizationRequest = false,
+    } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
@@ -453,31 +519,30 @@ The tips should be valuable, specific to the technologies discussed, and help th
     try {
       // Get user ID (if authenticated)
       const userId = req.isAuthenticated() ? (req.user as any).id : 1; // Default to demo user if not authenticated
-      
+
       // Determine or create a chat session
       let chatSessionId = sessionId;
       let isNewSession = false;
-      
+
       if (!chatSessionId) {
         // Create a new chat session with the first message as title
-        const firstMessagePreview = message.length > 30 
-          ? message.substring(0, 30) + "..." 
-          : message;
-          
+        const firstMessagePreview =
+          message.length > 30 ? message.substring(0, 30) + "..." : message;
+
         const newSession = await storage.createChatSession({
           userId,
           title: firstMessagePreview,
           metadata: {
             createdAt: new Date().toISOString(),
             source: "web",
-            isOptimization: isOptimizationRequest
-          }
+            isOptimization: isOptimizationRequest,
+          },
         });
-        
+
         chatSessionId = newSession.id;
         isNewSession = true;
       }
-      
+
       // Save the user message to the chat session
       const userChatMessage = await storage.createChatMessage({
         sessionId: chatSessionId,
@@ -486,16 +551,16 @@ The tips should be valuable, specific to the technologies discussed, and help th
         content: message,
         contentHtml: null,
         metadata: {
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
-      
+
       // Convert the conversation history to the format expected by OpenAI
       const messages: OpenAIChatMessage[] = [
         // System message to set the AI's behavior based on request type
         {
           role: "system",
-          content: isOptimizationRequest 
+          content: isOptimizationRequest
             ? "You are a Performance & Security Optimizer specialized in analyzing code for improvements. Your primary focus is on optimizing code for performance and security. When analyzing code: - Identify performance bottlenecks and suggest more efficient algorithms or approaches. - Highlight security vulnerabilities and recommend safer coding practices. - Provide detailed explanations of why certain patterns are problematic. - Offer specific code examples demonstrating your recommended improvements. - Include commentary on time complexity, memory usage, and security implications. - When relevant, suggest architectural changes that could yield significant improvements. Your feedback should be structured as: 1. Summary of findings 2. Performance issues (with examples of how to fix) 3. Security concerns (with examples of how to fix) 4. Other optimization opportunities Always explain the reasoning behind your recommendations so the developer understands not just what to change, but why the change improves performance or security. Be specific and concrete in your suggestions."
             : "You are AI Code Buddy, a highly intelligent and adaptive coding assistant. Your primary goal is to provide clear, concise, and context-aware responses to programming questions. Always detect the user's preferred language and respond in that language. When providing answers: - Include well-structured code examples when appropriate. - Offer step-by-step explanations for complex concepts. - Adapt your explanations based on the user's skill level. - If a user asks for best practices, security concerns, or performance optimizations, provide industry-standard guidance. - If the user provides incomplete or ambiguous questions, ask clarifying questions before responding. You specialize in: - Software development (frontend, backend, full-stack) - Web technologies (HTML, CSS, JavaScript, React, Node.js) - Databases (SQL, PostgreSQL, MongoDB) - DevOps (Docker, Kubernetes, CI/CD) Ensure that responses are engaging and educational, using language that matches the user's expertise level. If a user seems beginner-level, simplify explanations; if they are advanced, be more technical. Above all, be helpful, friendly, and precise in your responses.",
         },
@@ -514,13 +579,17 @@ The tips should be valuable, specific to the technologies discussed, and help th
       // If stream is true, use streaming response, otherwise use regular response
       if (stream) {
         // Handle streaming response (we'll save AI response after streaming completes)
-        const streamingData = { sessionId: chatSessionId, userId, isNewSession };
+        const streamingData = {
+          sessionId: chatSessionId,
+          userId,
+          isNewSession,
+        };
         await getChatCompletionStream(messages, res, streamingData);
         // The response is handled directly in the getChatCompletionStream function
       } else {
         // Regular non-streaming response
         const response = await getChatCompletion(messages);
-        
+
         // Save the AI response to the chat session
         const aiChatMessage = await storage.createChatMessage({
           sessionId: chatSessionId,
@@ -530,15 +599,15 @@ The tips should be valuable, specific to the technologies discussed, and help th
           contentHtml: null, // Can add HTML formatting if needed
           metadata: {
             timestamp: new Date().toISOString(),
-            model: "gpt-3.5-turbo" // Replace with actual model used
-          }
+            model: "gpt-4o-mini", // Replace with actual model used
+          },
         });
-        
+
         res.json({
           response,
           timestamp: new Date().toLocaleTimeString(),
           sessionId: chatSessionId,
-          isNewSession
+          isNewSession,
         });
       }
     } catch (error) {
@@ -551,13 +620,19 @@ The tips should be valuable, specific to the technologies discussed, and help th
       });
     }
   });
-  
+
   // Dedicated streaming chat endpoint (for clearer separation of concerns)
   app.post("/api/chat/stream", async (req, res) => {
     // Temporarily disable authentication check for testing
     // if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const { message, conversationHistory = [], sessionId = null, isOptimizationRequest = false } = req.body;
+    const {
+      message,
+      conversationHistory = [],
+      sessionId = null,
+      isOptimizationRequest = false,
+      isScoreRequest = false,
+    } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: "Message is required" });
@@ -566,31 +641,30 @@ The tips should be valuable, specific to the technologies discussed, and help th
     try {
       // Get user ID (if authenticated)
       const userId = req.isAuthenticated() ? (req.user as any).id : 1; // Default to demo user if not authenticated
-      
+
       // Determine or create a chat session
       let chatSessionId = sessionId;
       let isNewSession = false;
-      
+
       if (!chatSessionId) {
         // Create a new chat session with the first message as title
-        const firstMessagePreview = message.length > 30 
-          ? message.substring(0, 30) + "..." 
-          : message;
-          
+        const firstMessagePreview =
+          message.length > 30 ? message.substring(0, 30) + "..." : message;
+
         const newSession = await storage.createChatSession({
           userId,
           title: firstMessagePreview,
           metadata: {
             createdAt: new Date().toISOString(),
             source: "web",
-            isOptimization: isOptimizationRequest
-          }
+            isOptimization: isOptimizationRequest,
+          },
         });
-        
+
         chatSessionId = newSession.id;
         isNewSession = true;
       }
-      
+
       // Save the user message to the chat session
       const userChatMessage = await storage.createChatMessage({
         sessionId: chatSessionId,
@@ -599,10 +673,10 @@ The tips should be valuable, specific to the technologies discussed, and help th
         content: message,
         contentHtml: null,
         metadata: {
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
-      
+
       // Convert the conversation history to the format expected by OpenAI
       const messages: OpenAIChatMessage[] = [
         // System message to set the AI's behavior based on request type
@@ -625,14 +699,13 @@ The tips should be valuable, specific to the technologies discussed, and help th
       ];
 
       // Process as a streaming response with context for database storage
-      const streamingContext = { 
-        sessionId: chatSessionId, 
-        userId, 
-        isNewSession 
+      const streamingContext = {
+        sessionId: chatSessionId,
+        userId,
+        isNewSession,
       };
-      
+
       await getChatCompletionStream(messages, res, streamingContext);
-      
     } catch (error) {
       console.error("Error in streaming chat endpoint:", error);
       // Error handling should happen inside getChatCompletionStream
@@ -670,21 +743,22 @@ The tips should be valuable, specific to the technologies discussed, and help th
   // Get saved responses endpoint
   app.get("/api/saved-responses", async (req, res) => {
     // Check both Passport and custom session authentication
-    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
     if (!isAuthenticated) return res.sendStatus(401);
 
     try {
       // Get userId from either Passport or custom session
-      const userId = req.isAuthenticated() 
-        ? (req.user as any).id 
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
         : (req.session as any).userId;
-      
+
       // In a production environment, we would have a saved_responses table
       // For now, we'll find AI responses by scanning through chat messages
-      
+
       // First get all user's chat sessions
       const sessions = await storage.getUserChatSessions(userId);
-      
+
       // Array to hold saved responses (we'll consider all AI responses as "saved" for demo purposes)
       const savedResponses: Array<{
         id: number;
@@ -692,11 +766,11 @@ The tips should be valuable, specific to the technologies discussed, and help th
         timestamp: string;
         question: string;
       }> = [];
-      
+
       // For each session, get AI responses and matching user queries
       for (const session of sessions) {
         const messages = await storage.getChatMessages(session.id);
-        
+
         // Group messages into user-AI pairs
         let currentUserQuery: {
           id: number;
@@ -704,50 +778,52 @@ The tips should be valuable, specific to the technologies discussed, and help th
           sender: string;
           timestamp: Date;
         } | null = null;
-        
+
         for (let i = 0; i < messages.length; i++) {
           const message = messages[i];
-          
-          if (message.sender === 'user') {
+
+          if (message.sender === "user") {
             currentUserQuery = message;
-          } else if (message.sender === 'ai' && currentUserQuery) {
+          } else if (message.sender === "ai" && currentUserQuery) {
             // For each AI response that follows a user query, create a saved response object
             savedResponses.push({
               id: message.id,
               content: message.content,
               timestamp: new Date(message.timestamp).toLocaleString(),
-              question: currentUserQuery.content
+              question: currentUserQuery.content,
             });
-            
+
             // Reset currentUserQuery to ensure we pair queries with their direct responses
             currentUserQuery = null;
           }
         }
       }
-      
+
       // Sort by most recent first and limit to most recent 10
       savedResponses.sort((a, b) => {
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        return (
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
       });
       const limitedResponses = savedResponses.slice(0, 10);
-      
+
       res.json(limitedResponses);
     } catch (error) {
       console.error("Error fetching saved responses:", error);
       res.status(500).json({ error: "Failed to fetch saved responses" });
     }
   });
-  
+
   // Chat History API endpoints
-  
+
   // Get user's chat sessions
   app.get("/api/chat-sessions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const userId = (req.user as any).id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      
+
       const sessions = await storage.getChatSessionsWithPreview(userId, limit);
       res.json(sessions);
     } catch (error) {
@@ -755,56 +831,58 @@ The tips should be valuable, specific to the technologies discussed, and help th
       res.status(500).json({ error: "Failed to fetch chat sessions" });
     }
   });
-  
+
   // Get a specific chat session with all messages
   app.get("/api/chat-sessions/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const sessionId = parseInt(req.params.id);
       const userId = (req.user as any).id;
-      
+
       const session = await storage.getChatSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Chat session not found" });
       }
-      
+
       // Check if the session belongs to the current user
       if (session.userId !== userId) {
-        return res.status(403).json({ error: "You don't have access to this chat session" });
+        return res
+          .status(403)
+          .json({ error: "You don't have access to this chat session" });
       }
-      
+
       const messages = await storage.getChatMessages(sessionId);
-      
+
       res.json({
         ...session,
-        messages
+        messages,
       });
     } catch (error) {
       console.error("Error fetching chat session:", error);
       res.status(500).json({ error: "Failed to fetch chat session" });
     }
   });
-  
+
   // Create a new chat session
   app.post("/api/chat-sessions", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const userId = (req.user as any).id;
       const { title, metadata } = req.body;
-      
+
       const parsedData = insertChatSessionSchema.safeParse({
         userId,
         title: title || "New Chat",
-        metadata: metadata || {}
+        metadata: metadata || {},
       });
-      
+
       if (!parsedData.success) {
         return res.status(400).json({ error: "Invalid chat session data" });
       }
-      
+
       const session = await storage.createChatSession(parsedData.data);
       res.status(201).json(session);
     } catch (error) {
@@ -812,76 +890,85 @@ The tips should be valuable, specific to the technologies discussed, and help th
       res.status(500).json({ error: "Failed to create chat session" });
     }
   });
-  
+
   // Update a chat session title
   app.patch("/api/chat-sessions/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const sessionId = parseInt(req.params.id);
       const userId = (req.user as any).id;
       const { title } = req.body;
-      
+
       if (!title) {
         return res.status(400).json({ error: "Title is required" });
       }
-      
+
       const session = await storage.getChatSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Chat session not found" });
       }
-      
+
       // Check if the session belongs to the current user
       if (session.userId !== userId) {
-        return res.status(403).json({ error: "You don't have access to this chat session" });
+        return res
+          .status(403)
+          .json({ error: "You don't have access to this chat session" });
       }
-      
-      const updatedSession = await storage.updateChatSessionTitle(sessionId, title);
+
+      const updatedSession = await storage.updateChatSessionTitle(
+        sessionId,
+        title,
+      );
       res.json(updatedSession);
     } catch (error) {
       console.error("Error updating chat session:", error);
       res.status(500).json({ error: "Failed to update chat session" });
     }
   });
-  
+
   // Add a message to a chat session
   app.post("/api/chat-sessions/:id/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const sessionId = parseInt(req.params.id);
       const userId = (req.user as any).id;
       const { content, sender, contentHtml, metadata } = req.body;
-      
+
       if (!content || !sender) {
-        return res.status(400).json({ error: "Content and sender are required" });
+        return res
+          .status(400)
+          .json({ error: "Content and sender are required" });
       }
-      
+
       const session = await storage.getChatSession(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ error: "Chat session not found" });
       }
-      
+
       // Check if the session belongs to the current user
       if (session.userId !== userId) {
-        return res.status(403).json({ error: "You don't have access to this chat session" });
+        return res
+          .status(403)
+          .json({ error: "You don't have access to this chat session" });
       }
-      
+
       const parsedData = insertChatMessageSchema.safeParse({
         sessionId,
         userId,
         sender,
         content,
         contentHtml: contentHtml || null,
-        metadata: metadata || {}
+        metadata: metadata || {},
       });
-      
+
       if (!parsedData.success) {
         return res.status(400).json({ error: "Invalid chat message data" });
       }
-      
+
       const message = await storage.createChatMessage(parsedData.data);
       res.status(201).json(message);
     } catch (error) {
@@ -893,22 +980,23 @@ The tips should be valuable, specific to the technologies discussed, and help th
   // Code scoring endpoint
   app.post("/api/code/score", async (req, res) => {
     // Check both Passport and custom session authentication
-    const isAuthenticated = req.isAuthenticated() || (req.session && (req.session as any).userId);
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
     if (!isAuthenticated) return res.sendStatus(401);
 
     try {
       // Validate request body
       const codeSchema = z.object({
-        code: z.string().min(1, "Code is required")
+        code: z.string().min(1, "Code is required"),
       });
-      
+
       const parseResult = codeSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json({ error: "Invalid request body" });
       }
-      
+
       const { code } = parseResult.data;
-      
+
       // Create a prompt for OpenAI
       const messages: OpenAIChatMessage[] = [
         {
@@ -929,31 +1017,33 @@ Format your response as a JSON object with the following structure:
   "improvements": ["improvement 1", "improvement 2", ...]
 }
 
-Be fair and constructive in your evaluation. If the user has provided a coding question instead of code, evaluate the clarity and specificity of their question.`
+Be fair and constructive in your evaluation. If the user has provided a coding question instead of code, evaluate the clarity and specificity of their question.`,
         },
         {
           role: "user",
-          content: `Please evaluate this code and provide a quality score:\n\n${code}`
-        }
+          content: `Please evaluate this code and provide a quality score:\n\n${code}`,
+        },
       ];
-      
+
       // Get response from OpenAI
       try {
         const response = await getChatCompletion(messages);
-        
+
         try {
           // Clean up the response - remove markdown code blocks if present
-          let cleanedResponse = response.replace(/```json\s+/g, '').replace(/```\s*$/g, '');
+          let cleanedResponse = response
+            .replace(/```json\s+/g, "")
+            .replace(/```\s*$/g, "");
           cleanedResponse = cleanedResponse.trim();
-          
+
           // Parse the JSON response
           const scoreData = JSON.parse(cleanedResponse);
-          
+
           // Verify the response format
           if (
-            typeof scoreData.score === 'number' && 
-            typeof scoreData.feedback === 'string' && 
-            Array.isArray(scoreData.strengths) && 
+            typeof scoreData.score === "number" &&
+            typeof scoreData.feedback === "string" &&
+            Array.isArray(scoreData.strengths) &&
             Array.isArray(scoreData.improvements)
           ) {
             return res.json(scoreData);
@@ -961,57 +1051,69 @@ Be fair and constructive in your evaluation. If the user has provided a coding q
             // Fall back to a default response
             const fallbackScore = {
               score: 5,
-              feedback: "I analyzed your code but wasn't able to format my analysis properly. Here's a default assessment suggesting your code has both good qualities and areas for improvement.",
-              strengths: ["Has basic structure", "Logic is somewhat clear", "Functionality seems intact"],
-              improvements: ["Consider adding more comments", "Code structure could be optimized", "Error handling could be improved"]
+              feedback:
+                "I analyzed your code but wasn't able to format my analysis properly. Here's a default assessment suggesting your code has both good qualities and areas for improvement.",
+              strengths: [
+                "Has basic structure",
+                "Logic is somewhat clear",
+                "Functionality seems intact",
+              ],
+              improvements: [
+                "Consider adding more comments",
+                "Code structure could be optimized",
+                "Error handling could be improved",
+              ],
             };
             return res.json(fallbackScore);
           }
         } catch (parseError) {
-          console.error("Error parsing OpenAI code score response:", parseError);
-          
+          console.error(
+            "Error parsing OpenAI code score response:",
+            parseError,
+          );
+
           // Try to extract JSON from the response using regex
           try {
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const extractedJson = jsonMatch[0];
               const extractedData = JSON.parse(extractedJson);
-              
-              if (extractedData && typeof extractedData.score === 'number') {
+
+              if (extractedData && typeof extractedData.score === "number") {
                 return res.json(extractedData);
               }
             }
           } catch (extractError) {
             console.error("Error extracting JSON from response:", extractError);
           }
-          
+
           // Return error if parsing fails
-          return res.status(500).json({ 
+          return res.status(500).json({
             error: "Failed to generate code score - Invalid response format",
             score: 5,
             feedback: "Unable to process your code for scoring at this time.",
             strengths: [],
-            improvements: []
+            improvements: [],
           });
         }
       } catch (aiError) {
         console.error("Error getting code score from OpenAI:", aiError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to generate code score",
           score: 5,
           feedback: "Unable to process your code for scoring at this time.",
           strengths: [],
-          improvements: []
+          improvements: [],
         });
       }
     } catch (error) {
       console.error("Error processing code scoring:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to process code for scoring",
         score: 5,
         feedback: "An error occurred while analyzing your code.",
         strengths: [],
-        improvements: []
+        improvements: [],
       });
     }
   });
