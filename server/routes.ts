@@ -1001,34 +1001,75 @@ The tips should be valuable, specific to the technologies discussed, and help th
       const messages: OpenAIChatMessage[] = [
         {
           role: "system",
-          content: `You are a senior software engineer tasked with performing a detailed code review.
+          content: `You are a senior software engineer tasked with performing a detailed code review of changes made to files. Please evaluate the technical quality of the changes across the following dimensions (each scored from 1-10):
 
-Please evaluate the technical quality of the code across these dimensions (each scored 1-10):
-1. Correctness 
-2. Code Quality
-3. Performance Impact
-4. Security Implications
-5. Consistency with Visible Code Style
-6. Potential Impact on System Extensibility 
-7. Error Handling
+1. Correctness and Functionality
+2. Code Quality and Maintainability
+3. Performance Impact and Efficiency
+4. Security and Vulnerability Assessment
+5. Code Consistency and Style
+6. Scalability and Extensibility
+7. Error Handling and Robustness
 
-Follow the scoring reference (1-4: major issues, 5-7: moderate issues, 8-10: good to excellent).
 For each dimension, provide:
 • Score: X/10
-• Explanation: a brief summary of findings
-• Improvement Suggestion(s)
+• Explanation: A brief summary of your findings.
+• Improvement Suggestion(s): Concrete recommendations to address any issues.
 
-Additionally, if applicable, include a short code recommendation or snippet that can directly improve the code.
+If applicable (for example, when changes involve application logic), include a short code recommendation or snippet that can directly improve the code.
 
-Finally, provide an Overall Score: X.XX/10, and a concise list of key improvement items.
+Finally, provide an Overall Score (X.XX/10) and a concise list of key improvement items.
 
-Format your response as a JSON object with the following structure:
-{
-  "score": number between 0-10,
-  "feedback": "overall feedback paragraph",
-  "strengths": ["strength 1", "strength 2", ...],
-  "improvements": ["improvement 1", "improvement 2", ...]
-}`,
+Your output should be formatted as text or markdown in a clear, organized report. For example:
+
+---
+**Code Review Report**  
+**Review Details:**
+
+1. **Correctness and Functionality**  
+   Score: 8/10  
+   Explanation: The changes improve functionality and fix several bugs, but some edge cases may not be handled.  
+   Improvement Suggestion: Review error handling for edge conditions to ensure robustness.
+
+2. **Code Quality and Maintainability**  
+   Score: 7/10  
+   Explanation: The code is mostly well-organized, though some sections lack adequate comments.  
+   Improvement Suggestion: Add comments and refactor repetitive code blocks for clarity.
+
+3. **Performance Impact and Efficiency**  
+   Score: 8/10  
+   Explanation: The modifications are efficient; however, some operations could be optimized with better algorithms.  
+   Improvement Suggestion: Consider refactoring loops and using more efficient data structures.
+
+4. **Security and Vulnerability Assessment**  
+   Score: 9/10  
+   Explanation: The code handles sensitive data appropriately, but input validation could be improved.  
+   Improvement Suggestion: Implement stricter input validation and sanitize external data.
+
+5. **Code Consistency and Style**  
+   Score: 8/10  
+   Explanation: The code follows most style guidelines, though minor inconsistencies in formatting were noted.  
+   Improvement Suggestion: Use a linter to enforce uniform style across the codebase.
+
+6. **Scalability and Extensibility**  
+   Score: 7/10  
+   Explanation: The architecture is generally scalable, but certain hardcoded values may limit flexibility.  
+   Improvement Suggestion: Replace hardcoded parameters with configurable settings.
+
+7. **Error Handling and Robustness**  
+   Score: 8/10  
+   Explanation: Error handling is improved but can be enhanced with more contextual logging.  
+   Improvement Suggestion: Expand error messages and consider using a centralized error handling mechanism.
+
+**Overall Score: 7.71/10**  
+**Key Improvement Items:**  
+- Enhance error handling for edge cases.  
+- Add more descriptive comments and refactor repetitive code.  
+- Improve input validation and sanitize data more rigorously.  
+- Replace hardcoded parameters with configurable options.
+---
+
+Ensure your report is comprehensive yet concise, providing developers with actionable insights and specific recommendations for improvement.`,
         },
         {
           role: "user",
@@ -1040,91 +1081,23 @@ Format your response as a JSON object with the following structure:
       try {
         const response = await getChatCompletion(messages);
 
-        try {
-          // Clean up the response - remove markdown code blocks if present
-          let cleanedResponse = response
-            .replace(/```json\s+/g, "")
-            .replace(/```\s*$/g, "");
-          cleanedResponse = cleanedResponse.trim();
-
-          // Parse the JSON response
-          const scoreData = JSON.parse(cleanedResponse);
-
-          // Verify the response format
-          if (
-            typeof scoreData.score === "number" &&
-            typeof scoreData.feedback === "string" &&
-            Array.isArray(scoreData.strengths) &&
-            Array.isArray(scoreData.improvements)
-          ) {
-            return res.json(scoreData);
-          } else {
-            // Fall back to a default response
-            const fallbackScore = {
-              score: 5,
-              feedback:
-                "I analyzed your code but wasn't able to format my analysis properly. Here's a default assessment suggesting your code has both good qualities and areas for improvement.",
-              strengths: [
-                "Has basic structure",
-                "Logic is somewhat clear",
-                "Functionality seems intact",
-              ],
-              improvements: [
-                "Consider adding more comments",
-                "Code structure could be optimized",
-                "Error handling could be improved",
-              ],
-            };
-            return res.json(fallbackScore);
-          }
-        } catch (parseError) {
-          console.error(
-            "Error parsing OpenAI code score response:",
-            parseError,
-          );
-
-          // Try to extract JSON from the response using regex
-          try {
-            const jsonMatch = response.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const extractedJson = jsonMatch[0];
-              const extractedData = JSON.parse(extractedJson);
-
-              if (extractedData && typeof extractedData.score === "number") {
-                return res.json(extractedData);
-              }
-            }
-          } catch (extractError) {
-            console.error("Error extracting JSON from response:", extractError);
-          }
-
-          // Return error if parsing fails
-          return res.status(500).json({
-            error: "Failed to generate code score - Invalid response format",
-            score: 5,
-            feedback: "Unable to process your code for scoring at this time.",
-            strengths: [],
-            improvements: [],
-          });
-        }
+        // Return the response directly as markdown/text rather than trying to parse JSON
+        res.json({
+          report: response,
+          timestamp: new Date().toISOString(),
+        });
       } catch (aiError) {
         console.error("Error getting code score from OpenAI:", aiError);
-        return res.status(500).json({
+        res.status(500).json({
           error: "Failed to generate code score",
-          score: 5,
-          feedback: "Unable to process your code for scoring at this time.",
-          strengths: [],
-          improvements: [],
+          report: "Unable to process your code for scoring at this time.",
         });
       }
     } catch (error) {
       console.error("Error processing code scoring:", error);
       res.status(500).json({
         error: "Failed to process code for scoring",
-        score: 5,
-        feedback: "An error occurred while analyzing your code.",
-        strengths: [],
-        improvements: [],
+        report: "An error occurred while analyzing your code.",
       });
     }
   });
@@ -1148,56 +1121,99 @@ Format your response as a JSON object with the following structure:
       }
 
       const { code } = parseResult.data;
-      
+
       // Get user ID (if authenticated)
-      const userId = req.isAuthenticated() ? (req.user as any).id : (req.session as any).userId || 1;
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
+        : (req.session as any).userId || 1;
 
       // Create a prompt for OpenAI
       const messages: OpenAIChatMessage[] = [
         {
           role: "system",
-          content: `You are a senior software engineer tasked with performing a detailed code review.
+          content: `You are a senior software engineer tasked with performing a detailed code review of changes made to files. Please evaluate the technical quality of the changes across the following dimensions (each scored from 1-10):
 
-Please evaluate the technical quality of the code across these dimensions (each scored 1-10):
-1. Correctness 
-2. Code Quality
-3. Performance Impact
-4. Security Implications
-5. Consistency with Visible Code Style
-6. Potential Impact on System Extensibility 
-7. Error Handling
+1. Correctness and Functionality
+2. Code Quality and Maintainability
+3. Performance Impact and Efficiency
+4. Security and Vulnerability Assessment
+5. Code Consistency and Style
+6. Scalability and Extensibility
+7. Error Handling and Robustness
 
-Follow the scoring reference (1-4: major issues, 5-7: moderate issues, 8-10: good to excellent).
 For each dimension, provide:
 • Score: X/10
-• Explanation: a brief summary of findings
-• Improvement Suggestion(s)
+• Explanation: A brief summary of your findings.
+• Improvement Suggestion(s): Concrete recommendations to address any issues.
 
-Additionally, if applicable, include a short code recommendation or snippet that can directly improve the code.
+If applicable (for example, when changes involve application logic), include a short code recommendation or snippet that can directly improve the code.
 
-Finally, provide an Overall Score: X.XX/10, and a concise list of key improvement items.
+Finally, provide an Overall Score (X.XX/10) and a concise list of key improvement items.
 
-Format your response as a JSON object with the following structure:
-{
-  "score": number between 0-10,
-  "feedback": "overall feedback paragraph",
-  "strengths": ["strength 1", "strength 2", ...],
-  "improvements": ["improvement 1", "improvement 2", ...]
-}`
+Your output should be formatted as text or markdown in a clear, organized report. For example:
+
+---
+**Code Review Report**  
+**Review Details:**
+
+1. **Correctness and Functionality**  
+   Score: 8/10  
+   Explanation: The changes improve functionality and fix several bugs, but some edge cases may not be handled.  
+   Improvement Suggestion: Review error handling for edge conditions to ensure robustness.
+
+2. **Code Quality and Maintainability**  
+   Score: 7/10  
+   Explanation: The code is mostly well-organized, though some sections lack adequate comments.  
+   Improvement Suggestion: Add comments and refactor repetitive code blocks for clarity.
+
+3. **Performance Impact and Efficiency**  
+   Score: 8/10  
+   Explanation: The modifications are efficient; however, some operations could be optimized with better algorithms.  
+   Improvement Suggestion: Consider refactoring loops and using more efficient data structures.
+
+4. **Security and Vulnerability Assessment**  
+   Score: 9/10  
+   Explanation: The code handles sensitive data appropriately, but input validation could be improved.  
+   Improvement Suggestion: Implement stricter input validation and sanitize external data.
+
+5. **Code Consistency and Style**  
+   Score: 8/10  
+   Explanation: The code follows most style guidelines, though minor inconsistencies in formatting were noted.  
+   Improvement Suggestion: Use a linter to enforce uniform style across the codebase.
+
+6. **Scalability and Extensibility**  
+   Score: 7/10  
+   Explanation: The architecture is generally scalable, but certain hardcoded values may limit flexibility.  
+   Improvement Suggestion: Replace hardcoded parameters with configurable settings.
+
+7. **Error Handling and Robustness**  
+   Score: 8/10  
+   Explanation: Error handling is improved but can be enhanced with more contextual logging.  
+   Improvement Suggestion: Expand error messages and consider using a centralized error handling mechanism.
+
+**Overall Score: 7.71/10**  
+**Key Improvement Items:**  
+- Enhance error handling for edge cases.  
+- Add more descriptive comments and refactor repetitive code.  
+- Improve input validation and sanitize data more rigorously.  
+- Replace hardcoded parameters with configurable options.
+---
+
+Ensure your report is comprehensive yet concise, providing developers with actionable insights and specific recommendations for improvement.`,
         },
         {
           role: "user",
           content: `Please evaluate this code and provide a quality score:\n\n${code}`,
         },
       ];
-      
+
       // Process as a streaming response
       await getChatCompletionStream(messages, res);
     } catch (error) {
       console.error("Error processing code scoring stream:", error);
       res.status(500).json({
         error: "Failed to process code for scoring",
-        done: true
+        done: true,
       });
     }
   });
