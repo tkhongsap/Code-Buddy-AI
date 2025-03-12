@@ -6,13 +6,15 @@ import {
   users, 
   chatSessions, 
   chatMessages,
+  skillProgress,
   type User, 
   type InsertUser, 
   type ChatSession,
   type InsertChatSession,
   type ChatMessage,
   type InsertChatMessage,
-  type ChatSessionWithPreview
+  type ChatSessionWithPreview,
+  type SkillProgress
 } from "@shared/schema";
 import { eq } from 'drizzle-orm';
 
@@ -120,6 +122,46 @@ export class DbStorage {
     return result
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, limit);
+  }
+
+  // Skill progress methods
+  async getUserSkills(userId: number): Promise<SkillProgress[]> {
+    return await db.select()
+      .from(skillProgress)
+      .where(eq(skillProgress.userId, userId));
+  }
+
+  async updateUserSkill(userId: number, skillName: string, progress: number): Promise<SkillProgress> {
+    // Check if the skill already exists for this user
+    const existingSkills = await db.select()
+      .from(skillProgress)
+      .where(eq(skillProgress.userId, userId))
+      .where(eq(skillProgress.skillName, skillName));
+    
+    const now = new Date();
+    
+    if (existingSkills.length > 0) {
+      // Update existing skill
+      const result = await db.update(skillProgress)
+        .set({ 
+          progress: progress,
+          lastUpdated: now
+        })
+        .where(eq(skillProgress.id, existingSkills[0].id))
+        .returning();
+      return result[0];
+    } else {
+      // Create new skill
+      const result = await db.insert(skillProgress)
+        .values({
+          userId,
+          skillName,
+          progress,
+          lastUpdated: now
+        })
+        .returning();
+      return result[0];
+    }
   }
 }
 

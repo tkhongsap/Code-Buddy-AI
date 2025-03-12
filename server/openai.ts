@@ -141,4 +141,85 @@ export async function getChatCompletionStream(
   }
 }
 
+/**
+ * Analyze user queries to identify skills and estimate skill levels
+ * @param queries Array of user queries (messages)
+ * @returns Object mapping skill domains to their estimated skill level
+ */
+export async function analyzeSkills(queries: string[]): Promise<Record<string, number>> {
+  try {
+    const systemPrompt = `
+You are a skill assessment assistant. You will be given a list of user queries about programming.
+For each query, determine which domain(s) it relates to (e.g., JavaScript, React, Python, Docker, etc.)
+and estimate the user's skill level in that domain from 1 to 10,
+where 1 is a complete beginner question and 10 indicates an advanced or expert-level question.
+
+Limit your domains to the following categories:
+- JavaScript
+- TypeScript
+- React
+- Node.js
+- Python
+- Database
+- CSS
+- HTML
+- DevOps
+- Docker
+- Testing
+- Security
+- Performance
+- Algorithms
+- General Programming
+
+Return your results in JSON format with domains as keys and arrays of skill estimates as values.
+The format should be like this:
+{
+  "JavaScript": [2, 4, 7],
+  "React": [6, 7],
+  "Docker": [3]
+}
+`;
+
+    // Format the queries for the prompt
+    const queriesPrompt = queries.map((q, i) => `${i+1}) "${q}"`).join("\n");
+    
+    const messages: OpenAIChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Here is the list of user queries:\n${queriesPrompt}` }
+    ];
+
+    // Get response from OpenAI
+    const response = await getChatCompletion(messages);
+    
+    // Parse the JSON response
+    try {
+      // Extract JSON from the response using regex in case there's extra text
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const extractedJson = jsonMatch[0];
+        const parsedData = JSON.parse(extractedJson);
+        
+        // Calculate average skill level for each domain
+        const result: Record<string, number> = {};
+        for (const [domain, scores] of Object.entries(parsedData)) {
+          if (Array.isArray(scores) && scores.length > 0) {
+            // Calculate average and scale to 0-100
+            const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+            result[domain] = Math.round(average * 10); // Convert from 1-10 scale to 0-100
+          }
+        }
+        
+        return result;
+      }
+      throw new Error("Could not extract valid JSON from response");
+    } catch (parseError) {
+      console.error("Error parsing skill analysis response:", parseError);
+      throw new Error("Failed to parse skill analysis results");
+    }
+  } catch (error) {
+    console.error("Error analyzing skills with OpenAI:", error);
+    throw new Error("Failed to analyze skills");
+  }
+}
+
 export default openai;

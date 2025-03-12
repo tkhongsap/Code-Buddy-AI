@@ -5,7 +5,8 @@ import {
   type InsertChatSession, 
   type ChatMessage, 
   type InsertChatMessage, 
-  type ChatSessionWithPreview 
+  type ChatSessionWithPreview,
+  type SkillProgress
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -24,6 +25,9 @@ export interface IStorage {
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(sessionId: number): Promise<ChatMessage[]>;
   getChatSessionsWithPreview(userId: number, limit?: number): Promise<ChatSessionWithPreview[]>;
+  // Skill progress methods
+  getUserSkills(userId: number): Promise<SkillProgress[]>;
+  updateUserSkill(userId: number, skillName: string, progress: number): Promise<SkillProgress>;
   sessionStore: any; // Using any for session store to avoid typing issues
 }
 
@@ -32,18 +36,22 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private chatSessions: Map<number, ChatSession>;
   private chatMessages: Map<number, ChatMessage>;
+  private skills: Map<string, SkillProgress>; // Map with key as userId-skillName
   currentUserId: number;
   currentSessionId: number;
   currentMessageId: number;
+  currentSkillId: number;
   sessionStore: any; // Using any for session store to avoid typing issues
 
   constructor() {
     this.users = new Map();
     this.chatSessions = new Map();
     this.chatMessages = new Map();
+    this.skills = new Map();
     this.currentUserId = 1;
     this.currentSessionId = 1;
     this.currentMessageId = 1;
+    this.currentSkillId = 1;
     
     // Initialize session store
     const MemoryStore = createMemoryStore(session);
@@ -171,6 +179,41 @@ export class MemStorage implements IStorage {
     return result
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
       .slice(0, limit);
+  }
+
+  // Skill progress methods
+  async getUserSkills(userId: number): Promise<SkillProgress[]> {
+    // Filter skills by userId
+    return Array.from(this.skills.values())
+      .filter(skill => skill.userId === userId);
+  }
+
+  async updateUserSkill(userId: number, skillName: string, progress: number): Promise<SkillProgress> {
+    const key = `${userId}-${skillName}`;
+    const existingSkill = this.skills.get(key);
+    const now = new Date();
+    
+    if (existingSkill) {
+      // Update existing skill
+      const updatedSkill: SkillProgress = {
+        ...existingSkill,
+        progress,
+        lastUpdated: now
+      };
+      this.skills.set(key, updatedSkill);
+      return updatedSkill;
+    } else {
+      // Create new skill
+      const newSkill: SkillProgress = {
+        id: this.currentSkillId++,
+        userId,
+        skillName,
+        progress,
+        lastUpdated: now
+      };
+      this.skills.set(key, newSkill);
+      return newSkill;
+    }
   }
 }
 

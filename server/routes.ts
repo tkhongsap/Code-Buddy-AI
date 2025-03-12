@@ -14,6 +14,13 @@ import {
   type ChatMessage,
 } from "@shared/schema";
 
+// Helper function to determine skill level based on progress score
+function getSkillLevel(progress: number): string {
+  if (progress >= 80) return "Advanced";
+  if (progress >= 50) return "Intermediate";
+  return "Beginner";
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
@@ -423,29 +430,156 @@ The tips should be valuable, specific to the technologies discussed, and help th
         ? (req.user as any).id
         : (req.session as any).userId;
 
-      // In a full implementation, we would fetch this data from the database using:
-      // const skillProgressData = await db.select().from(skillProgress).where(eq(skillProgress.userId, userId));
-      // const courseProgressData = await db.select().from(courseProgress).where(eq(courseProgress.userId, userId));
+      // Get existing skill data for the user
+      const userSkills = await storage.getUserSkills(userId);
+      
+      // Calculate overall completion based on skill progress
+      let completion = 0;
+      if (userSkills.length > 0) {
+        const totalProgress = userSkills.reduce((sum, skill) => sum + skill.progress, 0);
+        completion = Math.round(totalProgress / userSkills.length);
+      } else {
+        // Default value if no skills exist yet
+        completion = 45;
+      }
 
-      // For now, let's generate some basic data based on the user's ID to ensure it's not hardcoded
-      // This makes it "dynamic" per user while we wait for full DB implementation
+      // Get course progress data (to be implemented later)
+      // For now, generate some basic stats
       const seed = userId * 7; // Use userId to seed our "random" numbers
-
+      
       const learningData = {
         overallProgress: {
-          completion: (seed % 30) + 40, // Between 40-70%
+          completion: completion,
           coursesCompleted: (seed % 5) + 2, // Between 2-7
           activeCourses: (seed % 3) + 1, // Between 1-4
           practiceHours: (seed % 40) + 10, // Between 10-50
           streakDays: (seed % 14) + 1, // Between 1-15
         },
-        // More learning data structure would be here
+        skills: userSkills.map(skill => ({
+          name: skill.skillName,
+          progress: skill.progress,
+          level: getSkillLevel(skill.progress),
+          lastUpdated: skill.lastUpdated
+        }))
       };
 
       res.json(learningData);
     } catch (error) {
       console.error("Error fetching learning progress data:", error);
       res.status(500).json({ error: "Failed to fetch learning progress data" });
+    }
+  });
+  
+  // Skill radar chart endpoint
+  app.get("/api/skills/radar", async (req, res) => {
+    // Check both Passport and custom session authentication
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
+
+    try {
+      // Get userId from either Passport or custom session
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
+        : (req.session as any).userId;
+      
+      // Get existing skill data for the user
+      const userSkills = await storage.getUserSkills(userId);
+      
+      if (userSkills.length === 0) {
+        return res.json({
+          message: "No skill data available. Please analyze your skills first.",
+          skillData: {}
+        });
+      }
+      
+      // Format data for radar chart
+      const skillData: Record<string, number> = {};
+      userSkills.forEach(skill => {
+        skillData[skill.skillName] = skill.progress;
+      });
+      
+      res.json({
+        skillData,
+        lastUpdated: userSkills.length > 0 ? 
+          userSkills.reduce((latest, skill) => 
+            new Date(skill.lastUpdated) > new Date(latest.lastUpdated) ? skill : latest
+          ).lastUpdated : null
+      });
+    } catch (error) {
+      console.error("Error fetching skill radar data:", error);
+      res.status(500).json({ error: "Failed to fetch skill radar data", skillData: {} });
+    }
+  });
+
+  // Skills assessment endpoint
+  app.post("/api/skills/analyze", async (req, res) => {
+    // Check both Passport and custom session authentication
+    const isAuthenticated =
+      req.isAuthenticated() || (req.session && (req.session as any).userId);
+    if (!isAuthenticated) return res.sendStatus(401);
+
+    try {
+      // Get userId from either Passport or custom session
+      const userId = req.isAuthenticated()
+        ? (req.user as any).id
+        : (req.session as any).userId;
+      
+      // Get user chat sessions
+      const sessions = await storage.getUserChatSessions(userId);
+      
+      if (sessions.length === 0) {
+        return res.status(400).json({ 
+          error: "Not enough chat history to perform skill analysis", 
+          skillsData: {} 
+        });
+      }
+      
+      // Collect user queries (messages) from all sessions
+      let userQueries: string[] = [];
+      
+      for (const session of sessions) {
+        const messages = await storage.getChatMessages(session.id);
+        
+        // Only use user messages, not AI responses
+        const userMessages = messages
+          .filter(msg => msg.sender === "user")
+          .map(msg => msg.content);
+          
+        userQueries = [...userQueries, ...userMessages];
+      }
+      
+      // Limit to the last 45 queries as mentioned in specs
+      const recentQueries = userQueries.slice(-45);
+      
+      if (recentQueries.length === 0) {
+        return res.status(400).json({ 
+          error: "No user messages found to perform skill analysis", 
+          skillsData: {} 
+        });
+      }
+      
+      // Use OpenAI to analyze skills
+      const { analyzeSkills } = await import("./openai");
+      const skillsData = await analyzeSkills(recentQueries);
+      
+      // Store skill progress in the database
+      for (const [skill, score] of Object.entries(skillsData)) {
+        await storage.updateUserSkill(userId, skill, score);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Skill analysis completed successfully", 
+        skillsData,
+        queriesAnalyzed: recentQueries.length
+      });
+    } catch (error) {
+      console.error("Error analyzing skills:", error);
+      res.status(500).json({ 
+        error: "Failed to analyze skills", 
+        skillsData: {} 
+      });
     }
   });
 
