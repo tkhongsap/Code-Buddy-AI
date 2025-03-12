@@ -454,17 +454,70 @@ The tips should be valuable, specific to the technologies discussed, and help th
         completion = 45;
       }
 
-      // Get course progress data (to be implemented later)
-      // For now, generate some basic stats
-      const seed = userId * 7; // Use userId to seed our "random" numbers
+      // Get real user activity data for course progress
+      // Get all user's chat sessions
+      const sessions = await storage.getUserChatSessions(userId);
+      
+      // Calculate active sessions (used in last 7 days)
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const activeSessions = sessions.filter(session => 
+        new Date(session.updatedAt || session.createdAt) >= sevenDaysAgo
+      );
+      
+      // Calculate completed sessions (those with more than 5 messages)
+      let completedSessions = 0;
+      let totalMessages = 0;
+      let dailyActivityMap = new Map<string, boolean>();
+      
+      // Process all sessions to get metrics
+      for (const session of sessions) {
+        const messages = await storage.getChatMessages(session.id);
+        
+        // Count total messages
+        totalMessages += messages.length;
+        
+        // Count completed sessions
+        if (messages.length >= 5) {
+          completedSessions++;
+        }
+        
+        // Track daily activity for streak calculation
+        messages.forEach(msg => {
+          const date = new Date(msg.timestamp);
+          const dateStr = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+          dailyActivityMap.set(dateStr, true);
+        });
+      }
+      
+      // Calculate learning hours (estimate 5 minutes per message)
+      const practiceHours = Math.round((totalMessages * 5) / 60);
+      
+      // Calculate streak days (consecutive days with activity)
+      const activityDays = Array.from(dailyActivityMap.keys()).sort();
+      let currentStreak = 0;
+      if (activityDays.length > 0) {
+        currentStreak = 1; // Start with 1 if there's any activity
+        // Count additional days in streak
+        for (let i = 1; i < activityDays.length; i++) {
+          const prevDate = new Date(activityDays[i-1]);
+          const currDate = new Date(activityDays[i]);
+          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / (24 * 60 * 60 * 1000));
+          if (diffDays === 1) {
+            currentStreak++;
+          } else {
+            currentStreak = 1; // Reset streak if not consecutive
+          }
+        }
+      }
       
       const learningData = {
         overallProgress: {
           completion: completion,
-          coursesCompleted: (seed % 5) + 2, // Between 2-7
-          activeCourses: (seed % 3) + 1, // Between 1-4
-          practiceHours: (seed % 40) + 10, // Between 10-50
-          streakDays: (seed % 14) + 1, // Between 1-15
+          coursesCompleted: completedSessions, // Based on sessions with 5+ messages
+          activeCourses: activeSessions.length, // Based on sessions used in last 7 days
+          practiceHours: Math.max(1, practiceHours), // Minimum 1 hour if user has any activity
+          streakDays: Math.max(1, currentStreak), // Minimum 1 day streak if user has any activity
         },
         skills: userSkills.map(skill => ({
           name: skill.skillName,
